@@ -69,3 +69,24 @@ class PreferencesUpdate(BaseModel):
                 raise ValueError("Allergies may contain only letters, digits, spaces, - ' and /.")
             cleaned.append(item)
         return list(dict.fromkeys(cleaned))
+
+
+class ProfileUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    display_name: str = Field(min_length=1, max_length=80)
+
+    @field_validator("display_name")
+    @classmethod
+    def _clean_name(cls, value: str) -> str:
+        value = " ".join(value.split())
+        if not value:
+            raise ValueError("Display name must not be blank.")
+        return value
+
+
+class PasswordChange(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)

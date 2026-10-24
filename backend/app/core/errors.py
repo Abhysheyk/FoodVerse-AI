@@ -61,6 +61,21 @@ class ForbiddenError(AppError):
     code = "forbidden"
 
 
+class NotFoundError(AppError):
+    status_code = 404
+    code = "not_found"
+
+
+class PayloadTooLargeError(AppError):
+    status_code = 413
+    code = "file_too_large"
+
+
+class UnsupportedMediaTypeError(AppError):
+    status_code = 415
+    code = "unsupported_media_type"
+
+
 def _body(
     code: str, message: str, request: Request, details: list[dict[str, Any]] | None = None
 ) -> dict[str, Any]:

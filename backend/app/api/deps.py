@@ -10,6 +10,7 @@ from app.core.config import Settings, get_settings
 from app.core.errors import ForbiddenError, NotAuthenticatedError
 from app.core.security import decode_access_token
 from app.db.session import get_db
+from app.media.storage import LocalStorage, StorageBackend
 from app.models import User
 from app.repositories import users as user_repo
 
@@ -55,4 +56,10 @@ def get_ollama_client(settings: AppSettings) -> OllamaClient:
     return OllamaClient(settings)
 
 
+def get_storage(settings: AppSettings) -> StorageBackend:
+    """The one place a storage backend is chosen. Swap in an object-storage adapter here."""
+    return LocalStorage(settings.media_root)
+
+
+Storage = Annotated[StorageBackend, Depends(get_storage)]
 CurrentUser = Annotated[User, Depends(get_current_user)]

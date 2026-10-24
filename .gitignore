@@ -30,3 +30,6 @@ media/
 .DS_Store
 .idea/
 .vscode/
+
+# local media/data (also keep MEDIA_ROOT outside the repo)
+var/

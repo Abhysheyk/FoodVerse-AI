@@ -1,10 +1,13 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute, PublicOnlyRoute } from "./auth/ProtectedRoute";
 import { DashboardPage } from "./pages/DashboardPage";
+import { HistoryPage } from "./pages/HistoryPage";
 import { LoginPage } from "./pages/LoginPage";
-import { PreferencesPage } from "./pages/PreferencesPage";
+import { MediaPage } from "./pages/MediaPage";
+import { ModuleDetailPage, ModulesPage } from "./pages/ModulesPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 export function App() {
   return (
@@ -16,7 +19,12 @@ export function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route index element={<DashboardPage />} />
-          <Route path="/preferences" element={<PreferencesPage />} />
+          <Route path="/modules" element={<ModulesPage />} />
+          <Route path="/modules/:key" element={<ModuleDetailPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="/media" element={<MediaPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/preferences" element={<Navigate to="/settings" replace />} />
         </Route>
       </Route>
       <Route path="*" element={<p className="center-note">Page not found.</p>} />

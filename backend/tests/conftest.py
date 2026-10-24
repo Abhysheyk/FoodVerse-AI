@@ -7,7 +7,9 @@ touched.
 """
 
 import os
-from collections.abc import Iterator
+import shutil
+import tempfile
+from collections.abc import Callable, Iterator
 
 import pytest
 
@@ -23,6 +25,8 @@ os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-key-0123456789-abcdefg
 os.environ["COOKIE_SECURE"] = "false"
 os.environ["COOKIE_SAMESITE"] = "lax"
 os.environ["OLLAMA_ENABLED"] = "false"
+_MEDIA_DIR = tempfile.mkdtemp(prefix="foodverse-test-media-")
+os.environ["MEDIA_ROOT"] = _MEDIA_DIR
 
 from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -45,7 +49,14 @@ def _migrated_database() -> Iterator[None]:
 def _clean_tables(_migrated_database: None) -> Iterator[None]:
     yield
     with get_engine().begin() as conn:
-        conn.execute(text("TRUNCATE TABLE refresh_tokens, user_preferences, users CASCADE"))
+        conn.execute(
+            text(
+                "TRUNCATE TABLE analysis_records, media_assets, refresh_tokens, "
+                "user_preferences, users CASCADE"
+            )
+        )
+    shutil.rmtree(_MEDIA_DIR, ignore_errors=True)
+    os.makedirs(_MEDIA_DIR, exist_ok=True)
 
 
 @pytest.fixture
@@ -53,6 +64,25 @@ def client() -> Iterator[TestClient]:
     app = create_app(get_settings())
     with TestClient(app, base_url="http://localhost") as c:
         yield c
+
+
+@pytest.fixture
+def make_client() -> Iterator[Callable[..., TestClient]]:
+    """Build a client whose settings are overridden (e.g. tiny upload limits)."""
+    opened: list[TestClient] = []
+
+    def factory(**overrides: object) -> TestClient:
+        settings = get_settings().model_copy(update=overrides)
+        app = create_app(settings)
+        app.dependency_overrides[get_settings] = lambda: settings
+        tc = TestClient(app, base_url="http://localhost")
+        tc.__enter__()
+        opened.append(tc)
+        return tc
+
+    yield factory
+    for tc in opened:
+        tc.__exit__(None, None, None)
 
 
 CSRF = {"X-Requested-With": "FoodVerseWeb"}
@@ -69,3 +99,13 @@ def registered(client: TestClient) -> dict[str, str]:
     r = client.post("/api/v1/auth/register", json=USER)
     assert r.status_code == 201, r.text
     return {"token": r.json()["access_token"], "email": r.json()["user"]["email"]}
+
+
+def register_user(client: TestClient, email: str, name: str = "Test") -> str:
+    """Register another account on this client and return its access token."""
+    r = client.post(
+        "/api/v1/auth/register",
+        json={"email": email, "password": "correct horse battery", "display_name": name},
+    )
+    assert r.status_code == 201, r.text
+    return str(r.json()["access_token"])

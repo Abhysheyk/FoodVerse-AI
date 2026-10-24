@@ -3,8 +3,9 @@
 Multimodal food intelligence app: React + TypeScript frontend, FastAPI + PostgreSQL backend,
 local-first AI (optional Ollama; no paid API is ever required or used as a silent fallback).
 
-**Current status: Phase 1 (foundation) only.** Accounts, sign-in, preferences (units, dietary
-preferences, allergies), health checks and an AI-status view exist. Food recognition, freshness,
+**Current status: Phase 2 (shared shell and media).** Accounts, sign-in, settings (profile,
+password, units, dietary preferences, allergies), a responsive app shell with dashboard, module
+entry points, history and a private media library with validated image uploads exist. Food recognition, freshness,
 hygiene, cooking, meal planning, audio and video are **not built yet**. See
 `FOODVERSE_IMPLEMENTATION_PLAN.md`. The IFCT nutrition table is intentionally empty for now.
 
@@ -77,9 +78,21 @@ are hash-pinned locks (regenerate with `make lock`, needs `uv`). Frontend is loc
 | GET, PUT | /users/me/preferences | bearer (PUT also needs the header) |
 | GET | /meta/preference-options | none |
 | GET | /ai/status | bearer |
+| PATCH | /users/me | bearer + header (display name) |
+| POST | /users/me/password | bearer + header (revokes all sessions) |
+| GET | /dashboard/summary, /modules | bearer |
+| POST | /media (multipart `file`) | bearer + header |
+| GET | /media?page=&page_size= , /media/{id} , /media/{id}/content | bearer (owner only) |
+| DELETE | /media/{id} | bearer + header (owner only) |
+| GET, DELETE | /history, /history/{id} | bearer (owner only) |
 | GET | /health, /ready | none |
 
 Errors always look like `{"error": {"code", "message", "details", "request_id"}}`.
+
+## Media uploads
+Images only (JPEG/PNG/WebP, 8 MiB default). Files are validated by signature, re-encoded (EXIF
+removed) and stored outside the repo in `MEDIA_ROOT` (default `~/.foodverse/media`); they are
+served only to their owner through the API. Details: `docs/adr/0002-media-storage.md`.
 
 ## Security notes
 Session design and its limits are in `docs/adr/0001-auth-session-strategy.md`: short-lived

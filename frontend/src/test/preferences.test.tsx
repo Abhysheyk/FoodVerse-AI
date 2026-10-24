@@ -19,7 +19,7 @@ describe("preferences page", () => {
         json(200, { ...(body as object), updated_at: "y" }),
     });
     const user = userEvent.setup();
-    renderApp("/preferences");
+    renderApp("/settings");
 
     await user.click(await screen.findByLabelText("Imperial"));
     await user.click(screen.getByLabelText("Vegan"));
@@ -49,7 +49,7 @@ describe("preferences page", () => {
         ])),
     });
     const user = userEvent.setup();
-    renderApp("/preferences");
+    renderApp("/settings");
     await user.click(await screen.findByRole("button", { name: "Save preferences" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("allergies.0: Value error, bad allergy");
   });

@@ -1,7 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { request, setAccessToken } from "../api/client";
-import { aiStatus, authBody, errorBody, json, mockApi, renderApp } from "./helpers";
+import { authBody, dashboardRoutes, errorBody, json, mockApi, renderApp } from "./helpers";
 
 const anonymous = { "POST /auth/refresh": () => json(401, errorBody("invalid_refresh", "Session expired.")) };
 
@@ -15,7 +15,7 @@ describe("session restore and route protection", () => {
   it("restores a session from the refresh cookie and shows the dashboard", async () => {
     mockApi({
       "POST /auth/refresh": () => json(200, authBody()),
-      "GET /ai/status": () => json(200, aiStatus),
+      ...dashboardRoutes(),
     });
     renderApp("/");
     expect(await screen.findByRole("heading", { name: /Welcome, Asha/ })).toBeInTheDocument();
@@ -28,7 +28,7 @@ describe("login", () => {
     const { calls } = mockApi({
       ...anonymous,
       "POST /auth/login": () => json(200, authBody("secret-access-token")),
-      "GET /ai/status": () => json(200, aiStatus),
+      ...dashboardRoutes(),
     });
     const user = userEvent.setup();
     renderApp("/login");
@@ -113,7 +113,7 @@ describe("registration", () => {
     const { calls } = mockApi({
       ...anonymous,
       "POST /auth/register": () => json(201, authBody()),
-      "GET /ai/status": () => json(200, aiStatus),
+      ...dashboardRoutes(),
     });
     const user = userEvent.setup();
     renderApp("/register");
@@ -130,7 +130,7 @@ describe("logout", () => {
   it("calls the logout endpoint and returns to the login page", async () => {
     const { calls } = mockApi({
       "POST /auth/refresh": () => json(200, authBody()),
-      "GET /ai/status": () => json(200, aiStatus),
+      ...dashboardRoutes(),
       "POST /auth/logout": () => new Response(null, { status: 204 }),
     });
     const user = userEvent.setup();
@@ -144,7 +144,7 @@ describe("logout", () => {
   it("still signs out locally if the network call fails", async () => {
     mockApi({
       "POST /auth/refresh": () => json(200, authBody()),
-      "GET /ai/status": () => json(200, aiStatus),
+      ...dashboardRoutes(),
       "POST /auth/logout": () => {
         throw new TypeError("offline");
       },

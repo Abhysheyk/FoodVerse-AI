@@ -7,7 +7,7 @@ from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
-from app.core.middleware import RequestContextMiddleware
+from app.core.middleware import BodySizeLimitMiddleware, RequestContextMiddleware
 
 logger = logging.getLogger("app")
 
@@ -27,13 +27,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
     app.include_router(api_router)
 
+    # Innermost: cap upload bodies (file size limit plus multipart framing overhead).
+    app.add_middleware(
+        BodySizeLimitMiddleware,
+        max_bytes=settings.max_upload_bytes + 64 * 1024,
+        path_prefix="/api/v1/media",
+    )
+
     # Added last = outermost. CORS answers preflights before anything else; request context
     # wraps everything so every response (including CORS and error responses) gets headers.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
     )
     app.add_middleware(RequestContextMiddleware)

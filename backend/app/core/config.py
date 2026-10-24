@@ -49,6 +49,19 @@ class Settings(BaseSettings):
     # future adapter must be explicitly enabled and can never be used as a silent fallback.
     allow_external_ai_providers: bool = False
 
+    # --- Media (see docs/adr/0002-media-storage.md) ---
+    # Uploaded files are stored here. The default is in the user's home directory, i.e.
+    # outside this repository and any web root. Point it at a dedicated data volume in production.
+    media_root: Path = Path.home() / ".foodverse" / "media"
+    max_upload_bytes: int = Field(default=8 * 1024 * 1024, ge=1024, le=64 * 1024 * 1024)
+    max_image_pixels: int = Field(default=40_000_000, ge=10_000, le=200_000_000)
+    user_media_quota_bytes: int = Field(default=500 * 1024 * 1024, ge=1024)
+
+    @field_validator("media_root")
+    @classmethod
+    def _absolute_media_root(cls, value: Path) -> Path:
+        return value.expanduser().resolve()
+
     @field_validator("database_url")
     @classmethod
     def _normalise_database_url(cls, value: str) -> str:

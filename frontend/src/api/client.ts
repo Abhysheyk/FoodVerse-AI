@@ -51,7 +51,8 @@ export function setSessionLostHandler(handler: (() => void) | null): void {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST" | "PUT";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  /** A plain object is sent as JSON; a FormData is sent as multipart (browser sets the boundary). */
   body?: unknown;
   /** Attach the access token and refresh once on 401. Auth endpoints pass false. */
   authenticated?: boolean;
@@ -59,13 +60,16 @@ interface RequestOptions {
 
 async function send(path: string, options: RequestOptions, token: string | null): Promise<Response> {
   const headers: Record<string, string> = { ...CSRF_HEADERS };
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  const isForm = options.body instanceof FormData;
+  if (options.body !== undefined && !isForm) headers["Content-Type"] = "application/json";
   if (token && options.authenticated !== false) headers["Authorization"] = `Bearer ${token}`;
+  let body: BodyInit | undefined;
+  if (options.body !== undefined) body = isForm ? (options.body as FormData) : JSON.stringify(options.body);
   return fetch(`${API_PREFIX}${path}`, {
     method: options.method ?? "GET",
     headers,
     credentials: "include",
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body,
   });
 }
 
@@ -114,7 +118,8 @@ export function refreshSession(): Promise<AuthResponse | null> {
   return refreshInFlight;
 }
 
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+/** Send a request, refreshing the session once on 401. Resolves only for 2xx responses. */
+async function execute(path: string, options: RequestOptions): Promise<Response> {
   let response = await send(path, options, accessToken);
 
   if (response.status === 401 && options.authenticated !== false) {
@@ -127,6 +132,16 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 
   if (!response.ok) throw await toApiError(response);
+  return response;
+}
+
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const response = await execute(path, options);
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+/** Fetch a protected binary (e.g. an image). <img src> cannot send the bearer token. */
+export async function requestBlob(path: string): Promise<Blob> {
+  return (await execute(path, {})).blob();
 }

@@ -51,3 +51,55 @@ export interface AIStatus {
   external_providers_allowed: boolean;
   fallback_policy: "none";
 }
+
+export interface Page<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
+export type ModuleKey =
+  | "food_recognition"
+  | "freshness"
+  | "hygiene"
+  | "cooking"
+  | "meal_planning";
+
+export interface ModuleInfo {
+  key: ModuleKey;
+  title: string;
+  description: string;
+  available: boolean;
+}
+
+export interface MediaItem {
+  id: string;
+  kind: "image" | "video" | "audio";
+  content_type: string;
+  display_name: string;
+  size_bytes: number;
+  width: number | null;
+  height: number | null;
+  duration_seconds: number | null;
+  created_at: string;
+}
+
+export type AnalysisStatus = "pending" | "completed" | "failed";
+
+export interface HistoryItem {
+  id: string;
+  module: ModuleKey;
+  status: AnalysisStatus;
+  title: string;
+  summary: string | null;
+  media_id: string | null;
+  created_at: string;
+}
+
+export interface DashboardSummary {
+  media: { count: number; total_bytes: number; quota_bytes: number; max_upload_bytes: number };
+  history: { total: number; by_module: Partial<Record<ModuleKey, number>> };
+  recent: HistoryItem[];
+}
