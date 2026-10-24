@@ -1,0 +1,32 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# node
+node_modules/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+
+# runtime data (later phases)
+uploads/
+media/
+*.gguf
+*.safetensors
+*.pt
+*.bin
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/

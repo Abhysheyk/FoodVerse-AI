@@ -1,0 +1,5 @@
+# Dev/test dependencies, installed on top of requirements.txt
+-c requirements.txt
+pytest>=8
+ruff>=0.6
+mypy>=1.11
