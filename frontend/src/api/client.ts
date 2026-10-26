@@ -56,6 +56,8 @@ interface RequestOptions {
   body?: unknown;
   /** Attach the access token and refresh once on 401. Auth endpoints pass false. */
   authenticated?: boolean;
+  /** Lets the caller cancel a slow request (e.g. a photo analysis). */
+  signal?: AbortSignal;
 }
 
 async function send(path: string, options: RequestOptions, token: string | null): Promise<Response> {
@@ -70,6 +72,7 @@ async function send(path: string, options: RequestOptions, token: string | null)
     headers,
     credentials: "include",
     body,
+    signal: options.signal,
   });
 }
 
@@ -144,4 +147,68 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 /** Fetch a protected binary (e.g. an image). <img src> cannot send the bearer token. */
 export async function requestBlob(path: string): Promise<Blob> {
   return (await execute(path, {})).blob();
+}
+
+function xhrUpload<T>(
+  path: string,
+  form: FormData,
+  token: string | null,
+  onProgress: (fraction: number) => void,
+  signal?: AbortSignal,
+): Promise<{ status: number; body: T | null; error: ApiError | null }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_PREFIX}${path}`);
+    xhr.withCredentials = true;
+    for (const [name, value] of Object.entries(CSRF_HEADERS)) xhr.setRequestHeader(name, value);
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total);
+    };
+    xhr.onerror = () => reject(new TypeError("network error"));
+    xhr.onabort = () => reject(new DOMException("Upload cancelled", "AbortError"));
+    xhr.onload = () => {
+      let parsed: unknown = null;
+      try {
+        parsed = JSON.parse(xhr.responseText);
+      } catch {
+        // not JSON
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve({ status: xhr.status, body: parsed as T, error: null });
+        return;
+      }
+      const err = (parsed as { error?: { code?: string; message?: string; details?: ApiErrorDetail[] | null; request_id?: string | null } } | null)?.error;
+      resolve({
+        status: xhr.status,
+        body: null,
+        error: new ApiError(xhr.status, err?.code ?? "http_error", err?.message ?? "Request failed.", err?.details ?? null, err?.request_id ?? null),
+      });
+    };
+    signal?.addEventListener("abort", () => xhr.abort(), { once: true });
+    xhr.send(form);
+  });
+}
+
+/**
+ * Multipart upload with real byte-level progress (fetch cannot report upload progress).
+ * Same session rules as request(): bearer token, one refresh on 401.
+ */
+export async function requestUpload<T>(
+  path: string,
+  form: FormData,
+  onProgress: (fraction: number) => void,
+  signal?: AbortSignal,
+): Promise<T> {
+  let result = await xhrUpload<T>(path, form, accessToken, onProgress, signal);
+  if (result.status === 401) {
+    const refreshed = await refreshSession();
+    if (!refreshed) {
+      onSessionLost?.();
+      throw result.error ?? new ApiError(401, "not_authenticated", "Please sign in again.");
+    }
+    result = await xhrUpload<T>(path, form, accessToken, onProgress, signal);
+  }
+  if (result.error) throw result.error;
+  return result.body as T;
 }

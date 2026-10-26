@@ -88,7 +88,7 @@ def test_dashboard_is_isolated_per_user(client: TestClient, registered: dict[str
     assert dash["history"]["total"] == 0 and dash["recent"] == []
 
 
-def test_modules_are_listed_and_none_claims_to_be_available(
+def test_only_implemented_modules_claim_to_be_available(
     client: TestClient, registered: dict[str, str]
 ) -> None:
     mods = client.get("/api/v1/modules", headers=auth_headers(registered["token"])).json()
@@ -99,7 +99,14 @@ def test_modules_are_listed_and_none_claims_to_be_available(
         "cooking",
         "meal_planning",
     ]
-    assert all(m["available"] is False for m in mods)
+    # A module is only marked available once its backend exists (Phase 3: food recognition).
+    assert {m["key"]: m["available"] for m in mods} == {
+        "food_recognition": True,
+        "freshness": False,
+        "hygiene": False,
+        "cooking": False,
+        "meal_planning": False,
+    }
 
 
 def test_history_pagination_filter_and_order(

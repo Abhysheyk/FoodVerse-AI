@@ -85,6 +85,12 @@ are hash-pinned locks (regenerate with `make lock`, needs `uv`). Frontend is loc
 | GET | /media?page=&page_size= , /media/{id} , /media/{id}/content | bearer (owner only) |
 | DELETE | /media/{id} | bearer + header (owner only) |
 | GET, DELETE | /history, /history/{id} | bearer (owner only) |
+| GET | /food/capabilities | bearer (what is configured: vision, nutrition sources) |
+| POST | /food/scan `{media_id}` | bearer + header (rate limited) |
+| POST | /food/calculate | bearer + header (preview only, saves nothing) |
+| GET | /nutrition/search?q= , /nutrition/barcode/{code} | bearer (rate limited) |
+| POST, GET | /meals , /meals?page=&category=&date_from=&date_to= | bearer (+ header for POST) |
+| GET, PUT, DELETE | /meals/{id} | bearer (+ header for writes; owner only) |
 | GET | /health, /ready | none |
 
 Errors always look like `{"error": {"code", "message", "details", "request_id"}}`.
@@ -94,11 +100,35 @@ Images only (JPEG/PNG/WebP, 8 MiB default). Files are validated by signature, re
 removed) and stored outside the repo in `MEDIA_ROOT` (default `~/.foodverse/media`); they are
 served only to their owner through the API. Details: `docs/adr/0002-media-storage.md`.
 
+## Food recognition and nutrition (Phase 3)
+Photo or manual entry -> the model *suggests* foods -> you confirm/edit them and enter portions ->
+nutrition comes from trusted data (USDA FoodData Central, Open Food Facts, or a reference table
+you import) -> totals are computed by fixed arithmetic -> save as a meal. No AI produces nutrition
+numbers; missing data is shown as missing, never as zero. See
+`docs/adr/0003-food-recognition-and-nutrition.md`.
+
+Setup (all optional; the app says plainly what is not configured):
+```bash
+# backend/.env
+OLLAMA_ENABLED=true
+OLLAMA_VISION_MODEL=<a vision model you pulled yourself>   # ollama pull <name>
+USDA_FDC_API_KEY=<free key from fdc.nal.usda.gov>
+OPEN_FOOD_FACTS_ENABLED=true
+```
+Offline reference data (e.g. IFCT, only from a file you are licensed to use; none is bundled):
+```bash
+cd backend && python -m app.nutrition.import_reference foods.csv \
+  --dataset IFCT --version 2017 --citation "..." --license-note "..."
+# CSV columns: source_id,name[,category],energy_kcal,protein_g,carbs_g,fat_g,fiber_g,sugars_g,saturated_fat_g,sodium_mg
+# (per 100 g; leave a cell empty when the dataset does not report it)
+```
+Photo analysis on CPU can take a minute or more; the UI shows progress and can cancel.
+
 ## Security notes
 Session design and its limits are in `docs/adr/0001-auth-session-strategy.md`: short-lived
 in-memory access token, HttpOnly rotating refresh cookie, Argon2id passwords, no tokens in web
-storage. Request bodies and passwords are never logged. Not yet done: rate limiting, email
-verification, password reset, CSP (planned for Phase 8).
+storage. Request bodies and passwords are never logged. Scan/search are rate limited per user in-process. Not yet done: shared rate limiting, email
+verification, password reset, CSP (planned for Phase 9).
 
 ## Optional local AI
 Set `OLLAMA_ENABLED=true` and model names in `backend/.env`. Phase 1 only *reports* whether

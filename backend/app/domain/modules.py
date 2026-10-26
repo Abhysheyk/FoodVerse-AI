@@ -23,6 +23,7 @@ MODULES: tuple[ModuleInfo, ...] = (
         "Food recognition & nutrition",
         "Identify a dish from a photo, confirm the food and portion, and see nutrition "
         "calculated from a cited food-composition table.",
+        available=True,
     ),
     ModuleInfo(
         ModuleKey.FRESHNESS,

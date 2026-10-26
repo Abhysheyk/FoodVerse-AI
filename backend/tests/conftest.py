@@ -46,13 +46,21 @@ def _migrated_database() -> Iterator[None]:
 
 
 @pytest.fixture(autouse=True)
+def _fresh_rate_limits() -> Iterator[None]:
+    from app.core.limits import reset_limiters
+
+    reset_limiters()
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _clean_tables(_migrated_database: None) -> Iterator[None]:
     yield
     with get_engine().begin() as conn:
         conn.execute(
             text(
-                "TRUNCATE TABLE analysis_records, media_assets, refresh_tokens, "
-                "user_preferences, users CASCADE"
+                "TRUNCATE TABLE meal_logs, reference_foods, analysis_records, media_assets, "
+                "refresh_tokens, user_preferences, users CASCADE"
             )
         )
     shutil.rmtree(_MEDIA_DIR, ignore_errors=True)

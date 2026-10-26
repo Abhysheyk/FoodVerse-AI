@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { ClockIcon, GridIcon, HomeIcon, ImageIcon, LogoMark, SettingsIcon } from "./icons";
+import { CameraIcon, ClockIcon, GridIcon, HomeIcon, ImageIcon, LogoMark, PlateIcon, SettingsIcon } from "./icons";
 
+// `extra` items are hidden from the phone tab bar (five fit) and reached from the dashboard instead.
 const NAV = [
-  { to: "/", label: "Dashboard", icon: <HomeIcon />, end: true },
-  { to: "/modules", label: "Modules", icon: <GridIcon />, end: false },
-  { to: "/history", label: "History", icon: <ClockIcon />, end: false },
-  { to: "/media", label: "Media", icon: <ImageIcon />, end: false },
-  { to: "/settings", label: "Settings", icon: <SettingsIcon />, end: false },
+  { to: "/", label: "Dashboard", icon: <HomeIcon />, end: true, extra: false },
+  { to: "/food", label: "Analyse", icon: <CameraIcon />, end: false, extra: false },
+  { to: "/meals", label: "Meals", icon: <PlateIcon />, end: false, extra: false },
+  { to: "/history", label: "History", icon: <ClockIcon />, end: false, extra: false },
+  { to: "/modules", label: "Modules", icon: <GridIcon />, end: false, extra: true },
+  { to: "/media", label: "Media", icon: <ImageIcon />, end: false, extra: true },
+  { to: "/settings", label: "Settings", icon: <SettingsIcon />, end: false, extra: false },
 ];
 
 export function Layout() {
@@ -33,7 +36,7 @@ export function Layout() {
       </header>
       <nav className="shell-nav" aria-label="Main">
         {NAV.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.end}>
+          <NavLink key={item.to} to={item.to} end={item.end} className={item.extra ? "nav-extra" : undefined}>
             {item.icon}
             <span>{item.label}</span>
           </NavLink>

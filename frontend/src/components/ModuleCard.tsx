@@ -2,12 +2,15 @@ import { Link } from "react-router-dom";
 import type { ModuleInfo } from "../api/types";
 import { Badge } from "./ui";
 
+/** Where an implemented module lives. Unimplemented modules keep their "not available" page. */
+const MODULE_HOME: Partial<Record<ModuleInfo["key"], string>> = { food_recognition: "/food" };
+
 export function ModuleCard({ module, count }: { module: ModuleInfo; count?: number }) {
   return (
     <article className="module-card">
       <div className="module-card-head">
         <h3>
-          <Link to={`/modules/${module.key}`} className="stretched">{module.title}</Link>
+          <Link to={MODULE_HOME[module.key] ?? `/modules/${module.key}`} className="stretched">{module.title}</Link>
         </h3>
         {module.available ? <Badge tone="ok">Available</Badge> : <Badge>Not available yet</Badge>}
       </div>

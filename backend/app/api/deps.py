@@ -1,17 +1,21 @@
 import uuid
+from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.ai.factory import build_vision_provider
 from app.ai.ollama import OllamaClient
+from app.ai.vision import VisionProvider
 from app.core.config import Settings, get_settings
 from app.core.errors import ForbiddenError, NotAuthenticatedError
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.media.storage import LocalStorage, StorageBackend
 from app.models import User
+from app.nutrition.service import NutritionService, build_nutrition_service
 from app.repositories import users as user_repo
 
 CSRF_HEADER = "X-Requested-With"
@@ -63,3 +67,18 @@ def get_storage(settings: AppSettings) -> StorageBackend:
 
 Storage = Annotated[StorageBackend, Depends(get_storage)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_nutrition_service(settings: AppSettings, db: DbSession) -> NutritionService:
+    """Overridable in tests so no real network call is ever made."""
+    return build_nutrition_service(settings, db)
+
+
+def get_vision_factory(settings: AppSettings) -> Callable[[], VisionProvider]:
+    """Returns a callable so the provider is only built (and can only fail) after the request
+    has been authenticated, rate limited and the photo's ownership verified."""
+    return lambda: build_vision_provider(settings)
+
+
+Nutrition = Annotated[NutritionService, Depends(get_nutrition_service)]
+VisionFactory = Annotated[Callable[[], VisionProvider], Depends(get_vision_factory)]

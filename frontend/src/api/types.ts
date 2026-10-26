@@ -103,3 +103,170 @@ export interface DashboardSummary {
   history: { total: number; by_module: Partial<Record<ModuleKey, number>> };
   recent: HistoryItem[];
 }
+
+// ---- Food recognition & nutrition (Phase 3) ----
+export type MealCategory = "breakfast" | "lunch" | "dinner" | "snack";
+export type SourceState = "ok" | "not_configured" | "unavailable" | "rate_limited" | "timeout";
+
+export interface SourceStatus {
+  source: string;
+  label: string;
+  status: SourceState;
+  message: string | null;
+}
+
+export interface NutrientDefinition {
+  key: string;
+  label: string;
+  unit: string;
+  core: boolean;
+}
+
+export interface FoodCapabilities {
+  vision: {
+    configured: boolean;
+    provider: string | null;
+    model: string | null;
+    external: boolean;
+    message: string | null;
+  };
+  nutrition: {
+    sources: SourceStatus[];
+    nutrients: NutrientDefinition[];
+    any_configured: boolean;
+    local_reference_records: number;
+  };
+}
+
+/** A trusted source record, frozen when the user picked it. Values are per 100 g. */
+export interface FoodSnapshot {
+  source: string;
+  source_label: string;
+  source_id: string;
+  name: string;
+  brand: string | null;
+  data_type: string | null;
+  per_100g: Record<string, number>;
+  serving_grams: number | null;
+  serving_label: string | null;
+  attribution: string;
+  url: string | null;
+  notes: string[];
+}
+
+export interface FoodCandidate extends FoodSnapshot {
+  food_ref: string;
+}
+
+export interface NutritionSearchResponse {
+  query: string;
+  results: FoodCandidate[];
+  sources: SourceStatus[];
+}
+
+export interface ObservedFood {
+  observed_id: number;
+  name: string;
+  description: string;
+  ambiguous: boolean;
+  alternatives: string[];
+}
+
+export interface ScanResponse {
+  scan_ref: string;
+  media_id: string;
+  provider: { name: string; model: string; external: boolean };
+  items: ObservedFood[];
+  notes: string | null;
+  uncertainty_note: string;
+  generated_at: string;
+}
+
+export type WeightUnit = "g" | "kg" | "oz" | "lb";
+export type PortionInput =
+  | { kind: "weight"; amount: number; unit: WeightUnit }
+  | { kind: "range"; min_amount: number; max_amount: number; unit: WeightUnit }
+  | { kind: "servings"; count: number };
+
+export interface FoodItemPayload {
+  item_id?: string;
+  observed_id?: number;
+  name: string;
+  food_ref?: string;
+  clear_food?: boolean;
+  portion?: PortionInput;
+}
+
+export interface ItemCalculation {
+  item_id: string;
+  name: string;
+  origin: "model" | "model_edited" | "user_added";
+  observed_name: string | null;
+  food: FoodSnapshot | null;
+  portion_input: PortionInput | null;
+  portion: { description: string; grams_low: number; grams_high: number; uncertain: boolean } | null;
+  nutrients: Record<string, { low: number; high: number; unit: string }>;
+  not_reported: string[];
+  warnings: string[];
+}
+
+export interface TotalNutrient {
+  key: string;
+  label: string;
+  unit: string;
+  low: number | null;
+  high: number | null;
+  complete: boolean;
+  contributing_items: number;
+  missing_items: string[];
+}
+
+export interface Calculation {
+  items: ItemCalculation[];
+  totals: Record<string, TotalNutrient>;
+  warnings: string[];
+  unit_basis: string;
+  method: string;
+  disclaimer: string;
+}
+
+export interface MealAudit extends Calculation {
+  schema_version: number;
+  model_observations: {
+    provider: { name: string; model: string; external: boolean };
+    media_id: string;
+    items: ObservedFood[];
+    notes: string | null;
+    generated_at: string;
+    uncertainty_note: string;
+  } | null;
+}
+
+export interface MealSummary {
+  id: string;
+  title: string;
+  items_label: string;
+  category: MealCategory;
+  eaten_at: string;
+  item_count: number;
+  calories: { low: number | null; high: number | null; complete: boolean };
+  media_id: string | null;
+  revision: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MealDetail extends MealSummary {
+  notes: string | null;
+  result: MealAudit;
+}
+
+export interface MealWriteBody {
+  items: FoodItemPayload[];
+  eaten_at: string;
+  category: MealCategory;
+  notes: string | null;
+  media_id?: string | null;
+  scan_ref?: string | null;
+  expected_revision?: number;
+}

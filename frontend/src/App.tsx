@@ -2,8 +2,11 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute, PublicOnlyRoute } from "./auth/ProtectedRoute";
 import { DashboardPage } from "./pages/DashboardPage";
+import { FoodPage } from "./pages/FoodPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { LoginPage } from "./pages/LoginPage";
+import { MealDetailPage, MealEditPage } from "./pages/MealDetailPage";
+import { MealsPage } from "./pages/MealsPage";
 import { MediaPage } from "./pages/MediaPage";
 import { ModuleDetailPage, ModulesPage } from "./pages/ModulesPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -21,6 +24,10 @@ export function App() {
           <Route index element={<DashboardPage />} />
           <Route path="/modules" element={<ModulesPage />} />
           <Route path="/modules/:key" element={<ModuleDetailPage />} />
+          <Route path="/food" element={<FoodPage />} />
+          <Route path="/meals" element={<MealsPage />} />
+          <Route path="/meals/:id" element={<MealDetailPage />} />
+          <Route path="/meals/:id/edit" element={<MealEditPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/media" element={<MediaPage />} />
           <Route path="/settings" element={<SettingsPage />} />

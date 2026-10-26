@@ -76,6 +76,14 @@ class UnsupportedMediaTypeError(AppError):
     code = "unsupported_media_type"
 
 
+class RateLimitedError(AppError):
+    status_code = 429
+    code = "rate_limited"
+
+    def __init__(self, message: str, *, retry_after: int) -> None:
+        super().__init__(message, headers={"Retry-After": str(max(1, retry_after))})
+
+
 def _body(
     code: str, message: str, request: Request, details: list[dict[str, Any]] | None = None
 ) -> dict[str, Any]:

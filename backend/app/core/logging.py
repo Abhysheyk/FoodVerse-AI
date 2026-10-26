@@ -24,3 +24,7 @@ def configure_logging(level: str) -> None:
     # SQL statements can contain user data; keep the engine quiet regardless of root level.
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.access").disabled = True  # replaced by our own access log
+    # httpx logs every request URL at INFO. Some upstream APIs (USDA FoodData Central) take the
+    # API key as a query parameter, so those lines would write secrets to the log.
+    for noisy in ("httpx", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)

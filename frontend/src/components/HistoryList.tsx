@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { HistoryItem, ModuleInfo } from "../api/types";
 import { formatDate } from "../lib/format";
 import { Badge } from "./ui";
@@ -17,7 +18,9 @@ export function HistoryList({
       {items.map((item) => (
         <li key={item.id}>
           <div className="history-main">
-            <p className="history-title">{item.title}</p>
+            <p className="history-title">
+              {item.module === "food_recognition" ? <Link to={`/meals/${item.id}`}>{item.title}</Link> : item.title}
+            </p>
             <p className="muted small-text">
               {title(item.module)} · <time dateTime={item.created_at}>{formatDate(item.created_at)}</time>
             </p>

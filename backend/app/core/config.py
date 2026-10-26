@@ -8,7 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -49,6 +49,31 @@ class Settings(BaseSettings):
     # future adapter must be explicitly enabled and can never be used as a silent fallback.
     allow_external_ai_providers: bool = False
 
+    # --- Vision (food recognition). See docs/adr/0003-food-recognition-and-nutrition.md ---
+    # "ollama" uses OLLAMA_* above. "openai_compatible" talks to any /chat/completions server
+    # that accepts images (a local llama.cpp/vLLM/LM Studio server, or a hosted API). Because a
+    # hosted API sends the user's photo off-machine, it refuses to start unless
+    # ALLOW_EXTERNAL_AI_PROVIDERS=true. There is never an automatic fallback between providers.
+    vision_provider: Literal["ollama", "openai_compatible"] = "ollama"
+    vision_api_base_url: str = ""
+    vision_api_key: SecretStr | None = None
+    vision_api_model: str = ""
+    vision_timeout_seconds: float = Field(default=120.0, gt=0, le=1800)
+
+    # --- Nutrition data sources (all optional; each is only used when configured) ---
+    usda_fdc_api_key: SecretStr | None = None
+    usda_fdc_base_url: str = "https://api.nal.usda.gov/fdc/v1"
+    open_food_facts_enabled: bool = False
+    open_food_facts_base_url: str = "https://world.openfoodfacts.org"
+    open_food_facts_user_agent: str = "FoodVerseAI/0.1 (self-hosted)"
+    nutrition_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+    # Signed scan/food references are accepted for this long after they were issued.
+    signed_ref_ttl_minutes: int = Field(default=720, ge=5, le=10_080)
+
+    # --- Per-user rate limits (in-process; protects model CPU and third-party API quotas) ---
+    scan_rate_limit_per_minute: int = Field(default=6, ge=1, le=600)
+    nutrition_search_rate_limit_per_minute: int = Field(default=30, ge=1, le=600)
+
     # --- Media (see docs/adr/0002-media-storage.md) ---
     # Uploaded files are stored here. The default is in the user's home directory, i.e.
     # outside this repository and any web root. Point it at a dedicated data volume in production.
@@ -87,6 +112,27 @@ class Settings(BaseSettings):
         if not value.startswith(("http://", "https://")):
             raise ValueError("OLLAMA_BASE_URL must start with http:// or https://")
         return value.rstrip("/")
+
+    @field_validator("vision_api_base_url", "usda_fdc_base_url", "open_food_facts_base_url")
+    @classmethod
+    def _validate_http_url(cls, value: str) -> str:
+        if value and not value.startswith(("http://", "https://")):
+            raise ValueError("URL settings must start with http:// or https://")
+        return value.rstrip("/")
+
+    @model_validator(mode="after")
+    def _vision_guards(self) -> "Settings":
+        if self.vision_provider == "openai_compatible":
+            if not self.allow_external_ai_providers:
+                raise ValueError(
+                    "VISION_PROVIDER=openai_compatible requires ALLOW_EXTERNAL_AI_PROVIDERS=true "
+                    "(the photo is sent to that server; this must be an explicit choice)"
+                )
+            if not self.vision_api_base_url or not self.vision_api_model:
+                raise ValueError(
+                    "VISION_API_BASE_URL and VISION_API_MODEL are required for openai_compatible"
+                )
+        return self
 
     @model_validator(mode="after")
     def _production_guards(self) -> "Settings":

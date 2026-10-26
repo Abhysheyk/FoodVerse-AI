@@ -1,16 +1,25 @@
-import { request, requestBlob, setAccessToken } from "./client";
+import { request, requestBlob, requestUpload, setAccessToken } from "./client";
 import type {
   AIStatus,
   AuthResponse,
+  Calculation,
   DashboardSummary,
+  FoodCapabilities,
+  FoodItemPayload,
   HistoryItem,
+  MealCategory,
+  MealDetail,
+  MealSummary,
+  MealWriteBody,
   MediaItem,
   ModuleInfo,
   ModuleKey,
   Page,
   PreferenceOptions,
+  NutritionSearchResponse,
   Preferences,
   PreferencesInput,
+  ScanResponse,
   User,
 } from "./types";
 
@@ -82,3 +91,31 @@ export function listHistory(page: number, module: ModuleKey | null, pageSize = 1
   return request<Page<HistoryItem>>(`/history?${params.toString()}`);
 }
 export const deleteHistory = (id: string) => request<void>(`/history/${id}`, { method: "DELETE" });
+
+// ---- Food recognition & nutrition ----
+export const uploadPhotoWithProgress = (file: File, onProgress: (fraction: number) => void, signal?: AbortSignal) => {
+  const form = new FormData();
+  form.append("file", file);
+  return requestUpload<MediaItem>("/media", form, onProgress, signal);
+};
+export const getFoodCapabilities = () => request<FoodCapabilities>("/food/capabilities");
+export const scanPhoto = (mediaId: string, signal?: AbortSignal) =>
+  request<ScanResponse>("/food/scan", { method: "POST", body: { media_id: mediaId }, signal });
+export const searchFoods = (query: string, signal?: AbortSignal) =>
+  request<NutritionSearchResponse>(`/nutrition/search?q=${encodeURIComponent(query)}`, { signal });
+export const calculateMeal = (items: FoodItemPayload[], scanRef: string | null, mealId?: string) =>
+  request<Calculation>("/food/calculate", {
+    method: "POST",
+    body: { items, scan_ref: scanRef, ...(mealId ? { meal_id: mealId } : {}) },
+  });
+
+export function listMeals(page: number, category: MealCategory | null, pageSize = 10) {
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  if (category) params.set("category", category);
+  return request<Page<MealSummary>>(`/meals?${params.toString()}`);
+}
+export const getMeal = (id: string) => request<MealDetail>(`/meals/${id}`);
+export const createMeal = (body: MealWriteBody) => request<MealDetail>("/meals", { method: "POST", body });
+export const updateMeal = (id: string, body: MealWriteBody) =>
+  request<MealDetail>(`/meals/${id}`, { method: "PUT", body });
+export const deleteMeal = (id: string) => request<void>(`/meals/${id}`, { method: "DELETE" });

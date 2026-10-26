@@ -45,7 +45,18 @@ export function mockApi(routes: Record<string, Handler>) {
       unmocked.push(key);
       throw new Error(`Unmocked request: ${key}`);
     }
-    return handler({ body, headers });
+    const pending = Promise.resolve(handler({ body, headers }));
+    const signal = init?.signal;
+    if (!signal) return pending;
+    // Like a real fetch, reject when the caller aborts.
+    return Promise.race([
+      pending,
+      new Promise<Response>((_, reject) => {
+        const abort = () => reject(new DOMException("Aborted", "AbortError"));
+        if (signal.aborted) abort();
+        else signal.addEventListener("abort", abort, { once: true });
+      }),
+    ]);
   });
   vi.stubGlobal("fetch", fetchMock);
   return { calls, fetchMock };
@@ -117,4 +128,41 @@ export function dashboardRoutes(over: Record<string, Handler> = {}): Record<stri
     "GET /ai/status": () => json(200, aiStatus),
     ...over,
   };
+}
+
+/**
+ * jsdom's XMLHttpRequest cannot reach our fetch mock, and uploads use XHR for progress events.
+ * This stand-in reports 50% progress, then forwards the request to the stubbed fetch so the same
+ * handlers (and call recording) apply.
+ */
+export function stubUploadXhr() {
+  class FakeXhr {
+    upload: { onprogress: ((e: { lengthComputable: boolean; loaded: number; total: number }) => void) | null } = { onprogress: null };
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    onabort: (() => void) | null = null;
+    status = 0;
+    responseText = "";
+    withCredentials = false;
+    private method = "GET";
+    private url = "";
+    private headers: Record<string, string> = {};
+    private aborted = false;
+    open(method: string, url: string) { this.method = method; this.url = url; }
+    setRequestHeader(name: string, value: string) { this.headers[name] = value; }
+    abort() { this.aborted = true; this.onabort?.(); }
+    send(body: FormData) {
+      this.upload.onprogress?.({ lengthComputable: true, loaded: 50, total: 100 });
+      fetch(this.url, { method: this.method, headers: this.headers, body }).then(
+        async (r) => {
+          if (this.aborted) return;
+          this.status = r.status;
+          this.responseText = await r.text();
+          this.onload?.();
+        },
+        () => !this.aborted && this.onerror?.(),
+      );
+    }
+  }
+  vi.stubGlobal("XMLHttpRequest", FakeXhr);
 }

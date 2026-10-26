@@ -43,12 +43,13 @@ foodverse-ai/
 | 0 | This plan | Plan approved by owner |
 | 1 | Foundation: repo scaffold, config/.env.example, DB + Alembic baseline, auth, user profile (allergies/diet), Ollama status check, scripts, frontend shell. **Moved to Phase 2:** upload pipeline and provider interfaces (no consumer yet) | migrations apply on clean DB; register/login works; unauthorised access rejected; bad uploads rejected; lint/type/tests/build pass |
 | 2 | **Shared shell + media (delivered):** app layout, dashboard, settings, history views, validated image uploads, storage abstraction, history pagination. *Food recognition + IFCT import moves to Phase 3 and later phases shift by one.* | uploads validated/isolated; dashboard uses real data; no fake records |
-| 3 | Freshness/spoilage | Visible-sign observations, advisory wording, low-quality-image warnings, history |
-| 4 | Hygiene monitoring | Checklist-based visible-concern report, disclaimer, no compliance claims, history |
-| 5 | Cooking assistant + recipes | Recipe from ingredients/text respecting allergies; allergen warning tests |
-| 6 | Meal planning, tracking, grocery lists | Plan generation from profile, daily totals from deterministic maths, grocery list from plan |
-| 7 | Audio + video inputs | Audio -> transcript -> routed to features; video -> sampled frames; limits enforced |
-| 8 | Hardening + docs + deployment | Security review, rate limits, README/API docs, Docker/run scripts, backup notes, full test run |
+| 3 | **Food recognition + nutrition (delivered, see ADR 0003):** photo/manual entry, editable detections, USDA/OFF/local sources, deterministic totals, meal log CRUD. Barcode UI and IFCT data (needs your file) remain open. *(Freshness/spoilage moves to Phase 4; later phases shift by one.)* | model output validated; no invented values; ownership enforced; tests pass |
+| 4 | Freshness/spoilage | Visible-sign observations, advisory wording, low-quality-image warnings, history |
+| 5 | Hygiene monitoring | Checklist-based visible-concern report, disclaimer, no compliance claims, history |
+| 6 | Cooking assistant + recipes | Recipe from ingredients/text respecting allergies; allergen warning tests |
+| 7 | Meal planning, tracking, grocery lists | Plan generation from profile, daily totals from deterministic maths, grocery list from plan |
+| 8 | Audio + video inputs | Audio -> transcript -> routed to features; video -> sampled frames; limits enforced |
+| 9 | Hardening + docs + deployment | Security review, rate limits, README/API docs, Docker/run scripts, backup notes, full test run |
 
 ## 7. Setup requirements (owner machine)
 Python 3.11+, Node 20+, PostgreSQL (version?), Ollama + manually pulled models, ffmpeg (video/audio), ~8 GB free disk for models. Nothing is downloaded automatically.
