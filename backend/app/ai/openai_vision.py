@@ -5,11 +5,13 @@ server or at a hosted API. It is never used as a fallback for Ollama. The API ke
 placed in the Authorization header and is never logged or returned in an error.
 """
 
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
 
 from app.ai.vision import (
+    VISION_JSON_SCHEMA,
     VISION_PROMPT,
     VisionBadOutputError,
     VisionProviderInfo,
@@ -49,6 +51,9 @@ class OpenAICompatibleVisionProvider:
         )
 
     def identify(self, image: bytes) -> VisionResult:
+        return parse_vision_output(self.complete_json(image, VISION_PROMPT, VISION_JSON_SCHEMA))
+
+    def complete_json(self, image: bytes, prompt: str, schema: dict[str, Any]) -> str:
         data_url = "data:image/jpeg;base64," + to_base64(prepare_image_for_model(image))
         payload = {
             "model": self._model,
@@ -58,7 +63,7 @@ class OpenAICompatibleVisionProvider:
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": VISION_PROMPT},
+                        {"type": "text", "text": prompt},
                         {"type": "image_url", "image_url": {"url": data_url}},
                     ],
                 }
@@ -93,4 +98,8 @@ class OpenAICompatibleVisionProvider:
             raise VisionBadOutputError(
                 "The vision provider returned a response in an unexpected format."
             ) from None
-        return parse_vision_output(content)
+        if not isinstance(content, str):
+            raise VisionBadOutputError(
+                "The vision provider returned a response in an unexpected format."
+            )
+        return content

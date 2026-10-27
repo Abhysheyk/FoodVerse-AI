@@ -85,6 +85,11 @@ class VisionRateLimitedError(VisionError):
     code = "vision_rate_limited"
 
 
+class InvalidImageError(AppError):
+    status_code = 422
+    code = "invalid_image"
+
+
 class DetectedFood(BaseModel):
     model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
 
@@ -114,6 +119,14 @@ class VisionProvider(Protocol):
         """Return candidate foods for a validated image, or raise a VisionError."""
         ...
 
+    def complete_json(self, image: bytes, prompt: str, schema: dict[str, Any]) -> str:
+        """Send one image and a task prompt; return the model's raw text (a JSON document).
+
+        Shared by every vision task (food recognition, freshness). The caller owns validation
+        of the text: nothing here trusts or repairs what the model said.
+        """
+        ...
+
 
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 _FENCE = re.compile(r"^```(?:json)?\s*|\s*```$", re.IGNORECASE)
@@ -122,6 +135,10 @@ _FENCE = re.compile(r"^```(?:json)?\s*|\s*```$", re.IGNORECASE)
 def _clean(text: str) -> str:
     text = unicodedata.normalize("NFC", _CONTROL.sub(" ", text))
     return " ".join(text.split()).strip(" -•*·\t")
+
+
+clean_text = _clean  # shared with other vision tasks that validate model text
+strip_code_fence = _FENCE
 
 
 def parse_vision_output(text: object) -> VisionResult:
@@ -170,6 +187,13 @@ def parse_vision_output(text: object) -> VisionResult:
 
 def prepare_image_for_model(data: bytes, max_side: int = 1024) -> bytes:
     """Downscale for speed (CPU-only machines) and flatten to JPEG. Input is already validated."""
+    try:
+        return _prepare(data, max_side)
+    except (OSError, ValueError, Image.DecompressionBombError):
+        raise InvalidImageError("The stored image could not be read as a valid image.") from None
+
+
+def _prepare(data: bytes, max_side: int) -> bytes:
     with Image.open(io.BytesIO(data)) as opened:
         opened.load()
         opened.thumbnail((max_side, max_side))

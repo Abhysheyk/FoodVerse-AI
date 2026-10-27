@@ -5,6 +5,11 @@ import type {
   Calculation,
   DashboardSummary,
   FoodCapabilities,
+  FreshnessCapabilities,
+  FreshnessDetail,
+  FreshnessLabel,
+  FreshnessRequest,
+  FreshnessSummary,
   FoodItemPayload,
   HistoryItem,
   MealCategory,
@@ -119,3 +124,16 @@ export const createMeal = (body: MealWriteBody) => request<MealDetail>("/meals",
 export const updateMeal = (id: string, body: MealWriteBody) =>
   request<MealDetail>(`/meals/${id}`, { method: "PUT", body });
 export const deleteMeal = (id: string) => request<void>(`/meals/${id}`, { method: "DELETE" });
+
+// ---- Freshness assessment ----
+export const getFreshnessCapabilities = () => request<FreshnessCapabilities>("/freshness/capabilities");
+export const createFreshness = (body: FreshnessRequest, signal?: AbortSignal) =>
+  request<FreshnessDetail>("/freshness/assessments", { method: "POST", body, signal });
+export function listFreshness(page: number, label: FreshnessLabel | null, pageSize = 10) {
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  if (label) params.set("label", label);
+  return request<Page<FreshnessSummary>>(`/freshness/assessments?${params.toString()}`);
+}
+export const getFreshness = (id: string) => request<FreshnessDetail>(`/freshness/assessments/${id}`);
+export const deleteFreshness = (id: string) =>
+  request<void>(`/freshness/assessments/${id}`, { method: "DELETE" });

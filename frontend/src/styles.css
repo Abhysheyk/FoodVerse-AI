@@ -263,3 +263,13 @@ button.link + button.link { margin-left: .25rem; }
 .result-item p { margin: .3rem 0; }
 .result-item-head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; }
 .result-item-head h4 { margin: 0; }
+
+/* ---------- Freshness (Phase 4) ---------- */
+.verdict-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; font-size: 1.1rem; margin: 0 0 .5rem; }
+.verdict-row .badge { font-size: .95rem; padding: .3rem .85rem; }
+.source-tag { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 .75rem; }
+.observations { list-style: none; padding: 0; margin: .75rem 0; display: grid; gap: .5rem; }
+.observations li { border-left: 3px solid var(--citrus); background: var(--surface-2); border-radius: 8px; padding: .5rem .75rem; }
+.observations p { margin: .15rem 0; }
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0 1rem; }
+.stacked-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }

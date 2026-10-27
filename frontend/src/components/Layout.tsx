@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { CameraIcon, ClockIcon, GridIcon, HomeIcon, ImageIcon, LogoMark, PlateIcon, SettingsIcon } from "./icons";
+import { CameraIcon, LeafIcon, ClockIcon, GridIcon, HomeIcon, ImageIcon, LogoMark, PlateIcon, SettingsIcon } from "./icons";
 
 // `extra` items are hidden from the phone tab bar (five fit) and reached from the dashboard instead.
 const NAV = [
   { to: "/", label: "Dashboard", icon: <HomeIcon />, end: true, extra: false },
   { to: "/food", label: "Analyse", icon: <CameraIcon />, end: false, extra: false },
+  { to: "/freshness", label: "Freshness", icon: <LeafIcon />, end: false, extra: false },
   { to: "/meals", label: "Meals", icon: <PlateIcon />, end: false, extra: false },
-  { to: "/history", label: "History", icon: <ClockIcon />, end: false, extra: false },
+  { to: "/history", label: "History", icon: <ClockIcon />, end: false, extra: true },
   { to: "/modules", label: "Modules", icon: <GridIcon />, end: false, extra: true },
   { to: "/media", label: "Media", icon: <ImageIcon />, end: false, extra: true },
   { to: "/settings", label: "Settings", icon: <SettingsIcon />, end: false, extra: false },

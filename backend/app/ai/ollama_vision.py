@@ -1,5 +1,7 @@
 """Vision via a local Ollama server (the default; no data leaves the machine)."""
 
+from typing import Any
+
 import httpx
 
 from app.ai.vision import (
@@ -33,15 +35,18 @@ class OllamaVisionProvider:
         self.info = VisionProviderInfo(name="ollama", model=model, external=False)
 
     def identify(self, image: bytes) -> VisionResult:
+        return parse_vision_output(self.complete_json(image, VISION_PROMPT, VISION_JSON_SCHEMA))
+
+    def complete_json(self, image: bytes, prompt: str, schema: dict[str, Any]) -> str:
         payload = {
             "model": self._model,
             "stream": False,
-            "format": VISION_JSON_SCHEMA,
+            "format": schema,
             "options": {"temperature": 0},
             "messages": [
                 {
                     "role": "user",
-                    "content": VISION_PROMPT,
+                    "content": prompt,
                     "images": [to_base64(prepare_image_for_model(image))],
                 }
             ],
@@ -83,4 +88,8 @@ class OllamaVisionProvider:
             raise VisionBadOutputError(
                 "The model server returned a response in an unexpected format."
             ) from None
-        return parse_vision_output(content)
+        if not isinstance(content, str):
+            raise VisionBadOutputError(
+                "The model server returned a response in an unexpected format."
+            )
+        return content

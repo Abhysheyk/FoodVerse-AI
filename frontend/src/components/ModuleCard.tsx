@@ -3,7 +3,7 @@ import type { ModuleInfo } from "../api/types";
 import { Badge } from "./ui";
 
 /** Where an implemented module lives. Unimplemented modules keep their "not available" page. */
-const MODULE_HOME: Partial<Record<ModuleInfo["key"], string>> = { food_recognition: "/food" };
+const MODULE_HOME: Partial<Record<ModuleInfo["key"], string>> = { food_recognition: "/food", freshness: "/freshness" };
 
 export function ModuleCard({ module, count }: { module: ModuleInfo; count?: number }) {
   return (

@@ -270,3 +270,107 @@ export interface MealWriteBody {
   scan_ref?: string | null;
   expected_revision?: number;
 }
+
+// ---- Freshness / spoilage-sign assessment (Phase 4) ----
+export type FreshnessLabel = "visible_concern_observed" | "no_obvious_visible_concern" | "inconclusive";
+export type AdviceLevel = "discard_recommended" | "use_caution" | "general_caution";
+
+export interface Choice {
+  value: string;
+  label: string;
+}
+
+export interface FreshnessCapabilities {
+  vision: FoodCapabilities["vision"];
+  categories: Choice[];
+  storage_conditions: Choice[];
+  packaging: Choice[];
+  classifier_enabled: boolean;
+  verdict_notice: string;
+}
+
+export interface FreshnessRequest {
+  media_id: string | null;
+  analyze_image: boolean;
+  food_name: string;
+  food_category: string;
+  storage_condition: string;
+  packaging: string;
+  storage_duration: { amount: number; unit: "hours" | "days" } | null;
+  purchased_on: string | null;
+  use_by_date: string | null;
+  best_before_date: string | null;
+  assessed_on: string;
+  notes: string | null;
+}
+
+export interface FreshnessObservation {
+  feature: string;
+  feature_label: string;
+  description: string;
+  location: string;
+  severity: "slight" | "moderate" | "marked";
+  certainty: "clearly_visible" | "possibly_visible";
+}
+
+export interface Reason {
+  code: string;
+  text: string;
+}
+
+export interface FreshnessAudit {
+  schema_version: number;
+  food: { name: string; category: string; category_label: string };
+  inputs: {
+    storage_condition: string;
+    packaging: string;
+    storage_hours: number | null;
+    purchased_on: string | null;
+    use_by_date: string | null;
+    best_before_date: string | null;
+    assessed_on: string;
+    notes: string | null;
+  };
+  findings: {
+    analysed: boolean;
+    image_quality: "clear" | "limited" | "unusable" | null;
+    food_visible: boolean | null;
+    matches_confirmed_food: "yes" | "no" | "unsure" | null;
+    observations: FreshnessObservation[];
+    limitations: string[];
+    notes: string | null;
+    withheld_text_count: number;
+  };
+  assessment: { label: FreshnessLabel; label_text: string; inconclusive_reasons: Reason[] };
+  advice: {
+    level: AdviceLevel;
+    headline: string;
+    reasons: Reason[];
+    steps: string[];
+    category_cautions: string[];
+    general_notes: string[];
+    retake_tips: string[];
+    sources: { name: string; url: string }[];
+  };
+  provider: { name: string; model: string; external: boolean } | null;
+  classifier_result: null;
+  verdict_notice: string;
+  generated_at: string;
+}
+
+export interface FreshnessSummary {
+  id: string;
+  food_name: string;
+  food_category: string;
+  category_label: string;
+  label: FreshnessLabel;
+  label_text: string;
+  advice_level: AdviceLevel;
+  image_analysed: boolean;
+  media_id: string | null;
+  created_at: string;
+}
+
+export interface FreshnessDetail extends FreshnessSummary {
+  result: FreshnessAudit;
+}

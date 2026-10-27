@@ -29,6 +29,7 @@ MODULES: tuple[ModuleInfo, ...] = (
         ModuleKey.FRESHNESS,
         "Freshness check",
         "An advisory look at visible freshness and spoilage signs, with clear uncertainty.",
+        available=True,
     ),
     ModuleInfo(
         ModuleKey.HYGIENE,

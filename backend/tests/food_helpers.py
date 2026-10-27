@@ -30,12 +30,17 @@ class FakeVision:
     """Scripted vision provider: returns a fixed result or raises a fixed error."""
 
     def __init__(
-        self, items: list[DetectedFood] | None = None, error: VisionError | None = None
+        self,
+        items: list[DetectedFood] | None = None,
+        error: VisionError | None = None,
+        raw: str | None = None,
     ) -> None:
         self.items = items if items is not None else []
         self.error = error
+        self.raw = raw  # scripted reply for complete_json (e.g. a freshness JSON document)
         self.calls = 0
         self.images: list[bytes] = []
+        self.prompts: list[str] = []
         self.info = VisionProviderInfo(name="fake", model="fake-vision-1", external=False)
 
     def identify(self, image: bytes) -> VisionResult:
@@ -44,6 +49,14 @@ class FakeVision:
         if self.error:
             raise self.error
         return VisionResult(items=self.items, notes="scripted")
+
+    def complete_json(self, image: bytes, prompt: str, schema: dict[str, Any]) -> str:
+        self.calls += 1
+        self.images.append(image)
+        self.prompts.append(prompt)
+        if self.error:
+            raise self.error
+        return self.raw if self.raw is not None else ""
 
 
 def usda_food(

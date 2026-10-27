@@ -37,12 +37,12 @@ describe("photo step", () => {
     expect(screen.getByRole("button", { name: "Analyse photo" })).toBeDisabled();
 
     await user.upload(screen.getByLabelText("Choose a photo"), png());
-    expect(screen.getByAltText("Preview of the selected meal photo")).toBeInTheDocument();
+    expect(screen.getByAltText("Preview of the selected photo")).toBeInTheDocument();
     expect(screen.getByText(/plate.png/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Replace photo" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Remove photo" }));
-    expect(screen.queryByAltText("Preview of the selected meal photo")).not.toBeInTheDocument();
+    expect(screen.queryByAltText("Preview of the selected photo")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Analyse photo" })).toBeDisabled();
   });
 

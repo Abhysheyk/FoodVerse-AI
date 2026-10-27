@@ -99,10 +99,10 @@ def test_only_implemented_modules_claim_to_be_available(
         "cooking",
         "meal_planning",
     ]
-    # A module is only marked available once its backend exists (Phase 3: food recognition).
+    # A module is only marked available once its backend exists (Phase 3 food, Phase 4 freshness).
     assert {m["key"]: m["available"] for m in mods} == {
         "food_recognition": True,
-        "freshness": False,
+        "freshness": True,
         "hygiene": False,
         "cooking": False,
         "meal_planning": False,

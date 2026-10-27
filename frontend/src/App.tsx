@@ -3,6 +3,9 @@ import { Layout } from "./components/Layout";
 import { ProtectedRoute, PublicOnlyRoute } from "./auth/ProtectedRoute";
 import { DashboardPage } from "./pages/DashboardPage";
 import { FoodPage } from "./pages/FoodPage";
+import { FreshnessDetailPage } from "./pages/FreshnessDetailPage";
+import { FreshnessHistoryPage } from "./pages/FreshnessHistoryPage";
+import { FreshnessPage } from "./pages/FreshnessPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MealDetailPage, MealEditPage } from "./pages/MealDetailPage";
@@ -25,6 +28,9 @@ export function App() {
           <Route path="/modules" element={<ModulesPage />} />
           <Route path="/modules/:key" element={<ModuleDetailPage />} />
           <Route path="/food" element={<FoodPage />} />
+          <Route path="/freshness" element={<FreshnessPage />} />
+          <Route path="/freshness/history" element={<FreshnessHistoryPage />} />
+          <Route path="/freshness/:id" element={<FreshnessDetailPage />} />
           <Route path="/meals" element={<MealsPage />} />
           <Route path="/meals/:id" element={<MealDetailPage />} />
           <Route path="/meals/:id/edit" element={<MealEditPage />} />

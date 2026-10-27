@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
 import { getFoodCapabilities, scanPhoto, uploadPhotoWithProgress } from "../api/endpoints";
 import type { ScanResponse } from "../api/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -7,11 +6,9 @@ import { blankItem, draftFromObserved } from "../components/food/drafts";
 import type { ItemDraft } from "../components/food/drafts";
 import { MealBuilder } from "../components/food/MealBuilder";
 import { FormError, errorMessage } from "../components/FormError";
+import { PhotoPicker } from "../components/PhotoPicker";
 import { Card, ErrorState, Loading, PageHeader } from "../components/ui";
 import { useResource } from "../hooks/useResource";
-import { formatBytes } from "../lib/format";
-
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 type Phase =
   | { name: "pick" }
@@ -24,62 +21,22 @@ const isAbort = (err: unknown) => err instanceof DOMException && err.name === "A
 export function FoodPage() {
   const caps = useResource(useCallback(() => getFoodCapabilities(), []));
   const [phase, setPhase] = useState<Phase>({ name: "pick" });
-  const [photo, setPhotoState] = useState<{ file: File; url: string } | null>(null);
-  const photoRef = useRef(photo);
-  const [pickError, setPickError] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [pickerKey, setPickerKey] = useState(0); // bumping it resets the picker
   const [runError, setRunError] = useState<string | null>(null);
   const [uploadedId, setUploadedId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const libraryRef = useRef<HTMLInputElement>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
 
-  // The preview object URL is created in the event handler (not an effect) and revoked on replace/unmount.
-  function setPhoto(next: File | null) {
-    if (photoRef.current) URL.revokeObjectURL(photoRef.current.url);
-    const value = next ? { file: next, url: URL.createObjectURL(next) } : null;
-    photoRef.current = value;
-    setPhotoState(value);
-  }
+  useEffect(() => () => abortRef.current?.abort(), []);
 
-  useEffect(
-    () => () => {
-      if (photoRef.current) URL.revokeObjectURL(photoRef.current.url);
-      abortRef.current?.abort();
-    },
-    [],
-  );
-
-  function onPick(e: ChangeEvent<HTMLInputElement>) {
-    const picked = e.target.files?.[0] ?? null;
-    e.target.value = ""; // allow re-picking the same file after removing it
-    if (!picked) return;
-    setPickError(null);
+  function onPhotoChange(next: File | null) {
+    setFile(next);
     setRunError(null);
-    setUploadedId(null); // a new photo means a new upload
-    // Fast feedback only. The server re-validates the real file content and is the authority.
-    if (!ALLOWED_TYPES.includes(picked.type)) {
-      setPhoto(null);
-      setPickError("Choose a JPEG, PNG or WebP image.");
-      return;
-    }
-    if (picked.size === 0) {
-      setPhoto(null);
-      setPickError("That file is empty.");
-      return;
-    }
-    setPhoto(picked);
-  }
-
-  function removePhoto() {
-    setPhoto(null);
-    setUploadedId(null);
-    setPickError(null);
-    setRunError(null);
+    setUploadedId(null); // a different photo means a new upload
   }
 
   async function analyse() {
-    const file = photo?.file;
     if (!file) return;
     const controller = new AbortController();
     abortRef.current = controller;
@@ -109,10 +66,10 @@ export function FoodPage() {
 
   function reset() {
     setPhase({ name: "pick" });
-    setPhoto(null);
+    setFile(null);
+    setPickerKey((k) => k + 1);
     setUploadedId(null);
     setRunError(null);
-    setPickError(null);
     setConfirmReset(false);
   }
 
@@ -170,35 +127,11 @@ export function FoodPage() {
       )}
 
       <Card title="Photo" headingId="photo-heading">
-        {photo ? (
-          <figure className="preview">
-            <img src={photo.url} alt="Preview of the selected meal photo" />
-            <figcaption className="small-text muted">{photo.file.name} · {formatBytes(photo.file.size)}</figcaption>
-          </figure>
-        ) : (
-          <p className="muted">No photo selected.</p>
-        )}
+        <PhotoPicker key={pickerKey} onChange={onPhotoChange} disabled={busy}
+          hint={<>JPEG, PNG or WebP. Photos are re-encoded, stored privately in your library, and
+            analysed {vision.configured && !vision.external ? "on this server" : "only if a recognition model is set up"}.
+            On a phone, “Take a photo” opens the camera; elsewhere it opens a file chooser.</>} />
 
-        <div className="row wrap">
-          <input ref={libraryRef} id="food-file" type="file" accept={ALLOWED_TYPES.join(",")} onChange={onPick}
-            className="visually-hidden" aria-label="Choose a photo" disabled={busy} />
-          <input ref={cameraRef} id="food-camera" type="file" accept="image/*" capture="environment" onChange={onPick}
-            className="visually-hidden" aria-label="Take a photo" disabled={busy} />
-          <button type="button" className="secondary" disabled={busy} onClick={() => libraryRef.current?.click()}>
-            {photo ? "Replace photo" : "Choose a photo"}
-          </button>
-          <button type="button" className="secondary" disabled={busy} onClick={() => cameraRef.current?.click()}>
-            Take a photo
-          </button>
-          {photo && (
-            <button type="button" className="secondary" disabled={busy} onClick={removePhoto}>Remove photo</button>
-          )}
-        </div>
-        <p className="hint">JPEG, PNG or WebP. Photos are re-encoded, stored privately in your library, and
-          analysed {vision.configured && !vision.external ? "on this server" : "only if a recognition model is set up"}.
-          On a phone, “Take a photo” opens the camera; elsewhere it opens a file chooser.</p>
-
-        <FormError message={pickError} />
         <FormError message={runError} />
 
         {phase.name === "uploading" && (
@@ -218,7 +151,7 @@ export function FoodPage() {
           {busy ? (
             <button type="button" className="secondary" onClick={() => abortRef.current?.abort()}>Cancel</button>
           ) : (
-            <button type="button" onClick={analyse} disabled={!photo || !vision.configured}>
+            <button type="button" onClick={analyse} disabled={!file || !vision.configured}>
               {runError && uploadedId ? "Try analysing again" : "Analyse photo"}
             </button>
           )}

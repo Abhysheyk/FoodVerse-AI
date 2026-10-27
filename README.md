@@ -91,6 +91,10 @@ are hash-pinned locks (regenerate with `make lock`, needs `uv`). Frontend is loc
 | GET | /nutrition/search?q= , /nutrition/barcode/{code} | bearer (rate limited) |
 | POST, GET | /meals , /meals?page=&category=&date_from=&date_to= | bearer (+ header for POST) |
 | GET, PUT, DELETE | /meals/{id} | bearer (+ header for writes; owner only) |
+| GET | /freshness/capabilities | bearer |
+| POST | /freshness/assessments | bearer + header (rate limited when analysing the photo) |
+| GET | /freshness/assessments?page=&label=&category= , /freshness/assessments/{id} | bearer (owner only) |
+| DELETE | /freshness/assessments/{id} | bearer + header (owner only) |
 | GET | /health, /ready | none |
 
 Errors always look like `{"error": {"code", "message", "details", "request_id"}}`.
@@ -124,11 +128,19 @@ cd backend && python -m app.nutrition.import_reference foods.csv \
 ```
 Photo analysis on CPU can take a minute or more; the UI shows progress and can cancel.
 
+## Freshness and spoilage signs (Phase 4)
+Confirm the food, add a photo and optional storage details. The vision model only reports what is
+*visible*; the label (`visible concern observed`, `no obvious visible concern in this image`,
+`inconclusive`) and the food-safety guidance come from fixed rules, not from the model. Nothing is
+ever called "safe" or "fresh", and there is no freshness score. Without a working AI provider you
+can still get guidance (the photo is then marked as not analysed). Past checks can be listed,
+opened and deleted. No freshness classifier is included. See `docs/adr/0004-freshness-assessment.md`.
+
 ## Security notes
 Session design and its limits are in `docs/adr/0001-auth-session-strategy.md`: short-lived
 in-memory access token, HttpOnly rotating refresh cookie, Argon2id passwords, no tokens in web
-storage. Request bodies and passwords are never logged. Scan/search are rate limited per user in-process. Not yet done: shared rate limiting, email
-verification, password reset, CSP (planned for Phase 9).
+storage. Request bodies and passwords are never logged. Scan/freshness/search are rate limited per user in-process. Not yet done: shared rate limiting, email
+verification, password reset, region-specific food-safety guidance (the guidance is commonly published advice and varies by country), CSP (planned for Phase 9).
 
 ## Optional local AI
 Set `OLLAMA_ENABLED=true` and model names in `backend/.env`. Phase 1 only *reports* whether
