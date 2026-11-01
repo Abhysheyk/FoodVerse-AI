@@ -212,3 +212,8 @@ export async function requestUpload<T>(
   if (result.error) throw result.error;
   return result.body as T;
 }
+
+export async function requestText(path: string): Promise<string> {
+  const response = await execute(path, {});
+  return response.text();
+}

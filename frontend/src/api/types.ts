@@ -374,3 +374,116 @@ export interface FreshnessSummary {
 export interface FreshnessDetail extends FreshnessSummary {
   result: FreshnessAudit;
 }
+
+// ---- Hygiene inspections (Phase 5) ----
+export type HygieneStatus = "draft" | "in_review" | "approved" | "rejected";
+export type HygieneSeverity = "low" | "medium" | "high";
+export type HygieneCertainty = "clearly_visible" | "possibly_visible";
+export type HygieneCategory =
+  | "surface_cleanliness"
+  | "uncovered_food"
+  | "raw_ready_to_eat_separation"
+  | "waste_management"
+  | "tool_cleanliness"
+  | "other_visible_concern";
+export type HygieneLocationType =
+  | "restaurant_kitchen" | "cafe" | "food_truck" | "home_kitchen" | "institutional" | "other";
+
+export interface HygieneChoice { value: string; label: string }
+export interface ChecklistItem { item_id: string; label: string; checked: boolean; note: string | null }
+export interface HygieneCapabilities {
+  vision: FoodCapabilities["vision"];
+  location_types: HygieneChoice[];
+  statuses: HygieneChoice[];
+  default_checklist: ChecklistItem[];
+  max_photos: number;
+}
+
+export interface HygieneFinding {
+  finding_id: string;
+  source: "model" | "user" | "user_edited";
+  category: HygieneCategory;
+  category_label: string;
+  severity: HygieneSeverity;
+  severity_label: string;
+  description: string;
+  location: string;
+  certainty: HygieneCertainty;
+  certainty_label: string;
+  evidence_media_id: string | null;
+  evidence_description: string | null;
+  user_note: string | null;
+  suggested_action: string;
+}
+
+export interface HygieneFindingInput {
+  finding_id?: string;
+  source?: "model" | "user";
+  category: HygieneCategory;
+  severity: HygieneSeverity;
+  description: string;
+  location: string;
+  certainty: HygieneCertainty;
+  evidence_media_id?: string | null;
+  evidence_description?: string | null;
+  user_note?: string | null;
+}
+
+export interface HygieneAudit {
+  schema_version: number;
+  location: { name: string; type: string; type_label: string; area: string | null };
+  checklist: ChecklistItem[];
+  findings: HygieneFinding[];
+  notes: string | null;
+  disclosures: string[];
+  not_assessable: string[];
+  model_limitations: string[];
+  model_notes: string | null;
+  withheld_text_count: number;
+  provider: { name: string; model: string; external: boolean } | null;
+  analyzed_at: string | null;
+  generated_at: string;
+}
+
+export interface HygieneSummary {
+  id: string;
+  location_name: string;
+  location_type: string;
+  location_type_label: string;
+  area: string | null;
+  status: HygieneStatus;
+  status_label: string;
+  finding_count: number;
+  highest_severity: HygieneSeverity | null;
+  photo_count: number;
+  revision: number;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HygieneDetail extends HygieneSummary {
+  media_ids: string[];
+  notes: string | null;
+  review_notes: string | null;
+  result: HygieneAudit;
+}
+
+export interface HygieneCreateBody {
+  location_name: string;
+  location_type: HygieneLocationType;
+  area: string | null;
+  media_ids: string[];
+  notes: string | null;
+}
+
+export interface HygieneUpdateBody {
+  expected_revision?: number;
+  location_name?: string;
+  location_type?: HygieneLocationType;
+  area?: string | null;
+  media_ids?: string[];
+  notes?: string | null;
+  checklist?: ChecklistItem[];
+  findings?: HygieneFindingInput[];
+}

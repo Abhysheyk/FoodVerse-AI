@@ -7,6 +7,7 @@ import { Badge } from "./ui";
 const DETAIL_ROUTE: Partial<Record<HistoryItem["module"], string>> = {
   food_recognition: "/meals",
   freshness: "/freshness",
+  hygiene: "/hygiene",
 };
 
 export function HistoryList({

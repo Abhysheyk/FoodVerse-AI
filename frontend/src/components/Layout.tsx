@@ -13,6 +13,7 @@ const NAV = [
   { to: "/modules", label: "Modules", icon: <GridIcon />, end: false, extra: true },
   { to: "/media", label: "Media", icon: <ImageIcon />, end: false, extra: true },
   { to: "/settings", label: "Settings", icon: <SettingsIcon />, end: false, extra: false },
+  { to: "/hygiene", label: "Hygiene", icon: <LeafIcon />, end: false, extra: true },
 ];
 
 export function Layout() {

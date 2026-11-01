@@ -1,4 +1,4 @@
-import { request, requestBlob, requestUpload, setAccessToken } from "./client";
+import { request, requestBlob, requestUpload, setAccessToken, requestText} from "./client";
 import type {
   AIStatus,
   AuthResponse,
@@ -26,6 +26,14 @@ import type {
   PreferencesInput,
   ScanResponse,
   User,
+  HygieneCapabilities,
+  HygieneCreateBody,
+  HygieneDetail,
+  HygieneLocationType,
+  HygieneStatus,
+  HygieneSummary,
+  HygieneUpdateBody
+
 } from "./types";
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
@@ -137,3 +145,37 @@ export function listFreshness(page: number, label: FreshnessLabel | null, pageSi
 export const getFreshness = (id: string) => request<FreshnessDetail>(`/freshness/assessments/${id}`);
 export const deleteFreshness = (id: string) =>
   request<void>(`/freshness/assessments/${id}`, { method: "DELETE" });
+
+// ---- Hygiene ----
+
+export const getHygieneCapabilities = () => request<HygieneCapabilities>("/hygiene/capabilities");
+
+export function listHygieneInspections(
+  page: number, status: HygieneStatus | null, locationType: HygieneLocationType | null, pageSize = 10,
+) {
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  if (status) params.set("status", status);
+  if (locationType) params.set("location_type", locationType);
+  return request<Page<HygieneSummary>>(`/hygiene/inspections?${params.toString()}`);
+}
+export const getHygieneInspection = (id: string) => request<HygieneDetail>(`/hygiene/inspections/${id}`);
+export const createHygieneInspection = (body: HygieneCreateBody) =>
+  request<HygieneDetail>("/hygiene/inspections", { method: "POST", body });
+export const updateHygieneInspection = (id: string, body: HygieneUpdateBody) =>
+  request<HygieneDetail>(`/hygiene/inspections/${id}`, { method: "PUT", body });
+export const analyzeHygieneInspection = (id: string, signal?: AbortSignal) =>
+  request<HygieneDetail>(`/hygiene/inspections/${id}/analyze`, { method: "POST", signal });
+export const submitHygieneInspection = (id: string) =>
+  request<HygieneDetail>(`/hygiene/inspections/${id}/submit`, { method: "POST" });
+export const approveHygieneInspection = (id: string, reviewNotes: string | null) =>
+  request<HygieneDetail>(`/hygiene/inspections/${id}/approve`, {
+    method: "POST", body: { review_notes: reviewNotes },
+  });
+export const rejectHygieneInspection = (id: string, reviewNotes: string) =>
+  request<HygieneDetail>(`/hygiene/inspections/${id}/reject`, {
+    method: "POST", body: { review_notes: reviewNotes },
+  });
+export const deleteHygieneInspection = (id: string) =>
+  request<void>(`/hygiene/inspections/${id}`, { method: "DELETE" });
+export const fetchHygieneReportHtml = (id: string) =>
+  requestText(`/hygiene/inspections/${id}/report`);

@@ -14,6 +14,9 @@ import { MediaPage } from "./pages/MediaPage";
 import { ModuleDetailPage, ModulesPage } from "./pages/ModulesPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { HygienePage } from "./pages/HygienePage";
+import { HygieneHistoryPage } from "./pages/HygieneHistoryPage";
+import { HygieneDetailPage } from "./pages/HygieneDetailPage";
 
 export function App() {
   return (
@@ -38,6 +41,9 @@ export function App() {
           <Route path="/media" element={<MediaPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/preferences" element={<Navigate to="/settings" replace />} />
+          <Route path="/hygiene" element={<HygienePage />} />
+          <Route path="/hygiene/history" element={<HygieneHistoryPage />} />
+          <Route path="/hygiene/:id" element={<HygieneDetailPage />} />
         </Route>
       </Route>
       <Route path="*" element={<p className="center-note">Page not found.</p>} />

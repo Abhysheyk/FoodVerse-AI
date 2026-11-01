@@ -87,9 +87,9 @@ export function blob(type = "image/jpeg"): Response {
 }
 
 export const MODULES = [
-  { key: "food_recognition", title: "Food recognition & nutrition", description: "Identify a dish.", available: false },
-  { key: "freshness", title: "Freshness check", description: "Visible freshness signs.", available: false },
-  { key: "hygiene", title: "Kitchen hygiene", description: "Visible hygiene concerns.", available: false },
+  { key: "food_recognition", title: "Food recognition & nutrition", description: "Identify a dish.", available: true },
+  { key: "freshness", title: "Freshness check", description: "Visible freshness signs.", available: true },
+  { key: "hygiene", title: "Kitchen hygiene", description: "Visible hygiene concerns.", available: true },
   { key: "cooking", title: "Cooking assistant", description: "Recipe help.", available: false },
   { key: "meal_planning", title: "Meal planning", description: "Plans and grocery lists.", available: false },
 ];

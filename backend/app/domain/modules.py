@@ -46,6 +46,12 @@ MODULES: tuple[ModuleInfo, ...] = (
         "Meal planning",
         "Personalised plans, nutrition tracking and grocery lists.",
     ),
+    ModuleInfo(
+    ModuleKey.HYGIENE,
+    "Kitchen hygiene",
+    "An advisory review of visible hygiene and safety concerns in kitchen photos.",
+    available=True,
+    ),
 )
 
 MODULES_BY_KEY: dict[ModuleKey, ModuleInfo] = {m.key: m for m in MODULES}

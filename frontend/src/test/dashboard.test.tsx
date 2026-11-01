@@ -41,7 +41,7 @@ describe("dashboard data loading", () => {
     expect(screen.getByText("No analyses yet")).toBeInTheDocument();
     expect(screen.queryByText(/in your history/)).not.toBeInTheDocument();
     // Every module is honestly labelled; nothing offers to run an analysis.
-    expect(await screen.findAllByText("Not available yet")).toHaveLength(MODULES.length);
+    expect(await screen.findAllByText("Not available yet")).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /analy[sz]e|scan|start/i })).not.toBeInTheDocument();
   });
 
@@ -96,26 +96,34 @@ describe("navigation and modules", () => {
     expect(screen.getByRole("link", { name: "Skip to main content" })).toHaveAttribute("href", "#main");
   });
 
-  it("lists all five modules as not yet available", async () => {
-    mockApi({ ...signedIn, ...dashboardRoutes() });
-    const user = userEvent.setup();
-    renderApp("/");
-    await user.click(await screen.findByRole("link", { name: "Modules" }));
-    expect(await screen.findByRole("heading", { name: "Modules", level: 1 })).toBeInTheDocument();
-    for (const m of MODULES) expect(await screen.findByRole("link", { name: m.title })).toBeInTheDocument();
-    expect(screen.getAllByText("Not available yet")).toHaveLength(5);
-  });
+it("lists every module with its current availability", async () => {
+  mockApi({ ...signedIn, ...dashboardRoutes() });
+  const user = userEvent.setup();
+  renderApp("/");
+  await user.click(await screen.findByRole("link", { name: "Modules" }));
+  expect(await screen.findByRole("heading", { name: "Modules", level: 1 })).toBeInTheDocument();
+  for (const m of MODULES) {
+    expect(await screen.findByRole("link", { name: m.title })).toBeInTheDocument();
+  }
+  // Phase 3 (food) + Phase 4 (freshness) + Phase 5 (hygiene) are available;
+  // cooking and meal planning are still not built.
+  expect(screen.getAllByText("Available")).toHaveLength(3);
+  expect(screen.getAllByText("Not available yet")).toHaveLength(2);
+});
 
-  it("a module page explains the module is not available and shows its (empty) history", async () => {
-    mockApi({
-      ...signedIn,
-      ...dashboardRoutes({ "GET /history?page=1&page_size=5&module=freshness": () => json(200, { items: [], total: 0, page: 1, page_size: 5, pages: 0 }) }),
-    });
-    renderApp("/modules/freshness");
-    expect(await screen.findByRole("heading", { name: "Freshness check" })).toBeInTheDocument();
-    expect(await screen.findByText(/not part of the current release/)).toBeInTheDocument();
-    expect(await screen.findByText("No entries yet")).toBeInTheDocument();
+  it("a not-yet-available module explains itself and shows its (empty) history", async () => {
+  mockApi({
+    ...signedIn,
+    ...dashboardRoutes({
+      "GET /history?page=1&page_size=5&module=cooking": () =>
+        json(200, { items: [], total: 0, page: 1, page_size: 5, pages: 0 }),
+    }),
   });
+  renderApp("/modules/cooking");
+  expect(await screen.findByRole("heading", { name: "Cooking assistant" })).toBeInTheDocument();
+  expect(await screen.findByText(/not part of the current release/)).toBeInTheDocument();
+  expect(await screen.findByText("No entries yet")).toBeInTheDocument();
+});
 
   it("handles an unknown module", async () => {
     const { calls } = mockApi({ ...signedIn, ...dashboardRoutes() });

@@ -108,6 +108,14 @@ def test_only_implemented_modules_claim_to_be_available(
         "meal_planning": False,
     }
 
+    assert {m["key"]: m["available"] for m in mods} == {
+    "food_recognition": True,
+    "freshness": True,
+    "hygiene": True,
+    "cooking": False,
+    "meal_planning": False,
+    }
+
 
 def test_history_pagination_filter_and_order(
     client: TestClient, registered: dict[str, str]
