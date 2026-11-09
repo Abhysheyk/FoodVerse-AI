@@ -17,6 +17,10 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { HygienePage } from "./pages/HygienePage";
 import { HygieneHistoryPage } from "./pages/HygieneHistoryPage";
 import { HygieneDetailPage } from "./pages/HygieneDetailPage";
+import { CookingPage } from "./pages/CookingPage";
+import { RecipesPage } from "./pages/RecipesPage";
+import { RecipeDetailPage } from "./pages/RecipeDetailPage";
+
 
 export function App() {
   return (
@@ -29,6 +33,9 @@ export function App() {
         <Route element={<Layout />}>
           <Route index element={<DashboardPage />} />
           <Route path="/modules" element={<ModulesPage />} />
+          <Route path="/cooking" element={<CookingPage />} />
+          <Route path="/recipes" element={<RecipesPage />} />
+          <Route path="/recipes/:id" element={<RecipeDetailPage />} />
           <Route path="/modules/:key" element={<ModuleDetailPage />} />
           <Route path="/food" element={<FoodPage />} />
           <Route path="/freshness" element={<FreshnessPage />} />

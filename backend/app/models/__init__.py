@@ -7,6 +7,7 @@ from app.models.reference import ReferenceFood
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.models.hygiene import HygieneInspection
+from app.models.cooking import CookingConversation, CookingMessage, MessageRole, Recipe, RecipeStatus
 
 __all__ = [
     "AnalysisRecord",
@@ -23,4 +24,9 @@ __all__ = [
     "User",
     "UserPreferences",
     "HygieneInspection",
+    "CookingConversation",
+    "CookingMessage",
+    "MessageRole",
+    "Recipe",
+    "RecipeStatus",
 ]

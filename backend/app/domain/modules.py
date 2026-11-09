@@ -40,6 +40,7 @@ MODULES: tuple[ModuleInfo, ...] = (
         ModuleKey.COOKING,
         "Cooking assistant",
         "Recipe ideas and step-by-step help that respect your allergies and diet.",
+        available=True,
     ),
     ModuleInfo(
         ModuleKey.MEAL_PLANNING,

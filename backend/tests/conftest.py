@@ -59,7 +59,7 @@ def _clean_tables(_migrated_database: None) -> Iterator[None]:
     with get_engine().begin() as conn:
         conn.execute(
             text(
-                "TRUNCATE TABLE hygiene_inspections, freshness_assessments, meal_logs, "
+                "TRUNCATE TABLE hygiene_inspections, cooking_messages, recipes, cooking_conversation, freshness_assessments, meal_logs, "
                 "reference_foods, analysis_records, media_assets, refresh_tokens, "
                 "user_preferences, users CASCADE"
             )

@@ -32,7 +32,14 @@ import type {
   HygieneLocationType,
   HygieneStatus,
   HygieneSummary,
-  HygieneUpdateBody
+  HygieneUpdateBody,
+  ChatResponse,
+  CookingCapabilities,
+  ConversationDetail,
+  Recipe,
+  RecipeSummary,
+  RecipeWriteBody,
+  ConversationSummary
 
 } from "./types";
 
@@ -179,3 +186,52 @@ export const deleteHygieneInspection = (id: string) =>
   request<void>(`/hygiene/inspections/${id}`, { method: "DELETE" });
 export const fetchHygieneReportHtml = (id: string) =>
   requestText(`/hygiene/inspections/${id}/report`);
+
+// ---- Cooking assistant ----
+export const getCookingCapabilities = () => request<CookingCapabilities>("/cooking/capabilities");
+
+export const sendChat = (message: string, conversationId: string | null, signal?: AbortSignal) =>
+  request<ChatResponse>("/cooking/chat", {
+    method: "POST",
+    body: { message, conversation_id: conversationId },
+    signal,
+  });
+
+export function listConversations(page: number, pageSize = 20) {
+  return request<Page<ConversationSummary>>(`/cooking/conversations?page=${page}&page_size=${pageSize}`);
+}
+export const getConversation = (id: string) =>
+  request<ConversationDetail>(`/cooking/conversations/${id}`);
+export const deleteConversation = (id: string) =>
+  request<void>(`/cooking/conversations/${id}`, { method: "DELETE" });
+
+export const generateRecipe = (
+  mode: "from_ingredients" | "free",
+  ingredients: string[],
+  servings: number,
+  signal?: AbortSignal,
+) => request<Recipe>("/cooking/recipes/generate", {
+  method: "POST",
+  body: { mode, ingredients, servings },
+  signal,
+});
+
+export function listRecipes(page: number, q: string | null, favorite: boolean | null, pageSize = 10) {
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  if (q) params.set("q", q);
+  if (favorite !== null) params.set("favorite", String(favorite));
+  return request<Page<RecipeSummary>>(`/cooking/recipes?${params.toString()}`);
+}
+export const getRecipe = (id: string, servings?: number) =>
+  request<Recipe>(`/cooking/recipes/${id}${servings ? `?servings=${servings}` : ""}`);
+export const saveRecipe = (id: string) =>
+  request<Recipe>(`/cooking/recipes/${id}/save`, { method: "POST" });
+export const favoriteRecipe = (id: string, favorite: boolean) =>
+  request<Recipe>(`/cooking/recipes/${id}/favorite`, { method: "POST", body: { favorite } });
+export const updateRecipe = (id: string, body: RecipeWriteBody) =>
+  request<Recipe>(`/cooking/recipes/${id}`, { method: "PUT", body });
+export const deleteRecipe = (id: string) =>
+  request<void>(`/cooking/recipes/${id}`, { method: "DELETE" });
+export const attachRecipeNutrition = (
+  id: string, links: { ingredient_index: number; food_ref: string; grams: number }[],
+) => request<Recipe>(`/cooking/recipes/${id}/nutrition`, { method: "POST", body: { links } });

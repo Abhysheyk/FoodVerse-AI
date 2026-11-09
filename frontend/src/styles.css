@@ -273,3 +273,19 @@ button.link + button.link { margin-left: .25rem; }
 .observations p { margin: .15rem 0; }
 .field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0 1rem; }
 .stacked-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+
+/* ---------- Cooking assistant (Phase 6) ---------- */
+.cooking-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 1rem; }
+@media (max-width: 860px) { .cooking-layout { grid-template-columns: 1fr; } }
+.conversation-list { list-style: none; padding: 0; margin: 0 0 .75rem; display: grid; gap: .35rem; }
+.conversation-list button { width: 100%; text-align: left; background: transparent; color: var(--ink);
+  border: 1px solid var(--line); border-radius: 8px; padding: .5rem .6rem; margin: 0; cursor: pointer; }
+.conversation-list button.conversation-active { border-color: var(--brand); background: var(--brand-soft); }
+.conversation-title { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-scroll { max-height: 480px; overflow-y: auto; padding: .25rem .25rem .75rem; }
+.chat-turn { margin: .6rem 0; padding: .6rem .75rem; border-radius: 10px; }
+.chat-user { background: var(--brand-soft); }
+.chat-assistant { background: var(--surface-2); }
+.chat-role { font-size: .8rem; font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 .2rem; }
+.chat-body { margin: 0; }
+.chat-warnings { color: var(--ink); background: var(--citrus-soft); border-radius: 8px; padding: .4rem .6rem; margin: .5rem 0 0; }

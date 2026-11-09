@@ -45,20 +45,26 @@ class Settings(BaseSettings):
     ollama_text_model: str = ""
     ollama_vision_model: str = ""
     ollama_timeout_seconds: float = Field(default=120.0, gt=0, le=1800)
-    # Policy flag only. Phase 1 contains no external provider adapters; this exists so a
-    # future adapter must be explicitly enabled and can never be used as a silent fallback.
     allow_external_ai_providers: bool = False
 
     # --- Vision (food recognition). See docs/adr/0003-food-recognition-and-nutrition.md ---
-    # "ollama" uses OLLAMA_* above. "openai_compatible" talks to any /chat/completions server
-    # that accepts images (a local llama.cpp/vLLM/LM Studio server, or a hosted API). Because a
-    # hosted API sends the user's photo off-machine, it refuses to start unless
-    # ALLOW_EXTERNAL_AI_PROVIDERS=true. There is never an automatic fallback between providers.
     vision_provider: Literal["ollama", "openai_compatible"] = "ollama"
     vision_api_base_url: str = ""
     vision_api_key: SecretStr | None = None
     vision_api_model: str = ""
     vision_timeout_seconds: float = Field(default=120.0, gt=0, le=1800)
+
+    # --- Text (cooking assistant, Phase 6). Same policy: opt-in, explicit, no fallback. ---
+    text_provider: Literal["ollama", "openai_compatible"] = "ollama"
+    text_api_base_url: str = ""
+    text_api_key: SecretStr | None = None
+    text_api_model: str = ""
+    text_timeout_seconds: float = Field(default=180.0, gt=0, le=3600)
+
+    # --- Cooking assistant ---
+    cooking_rate_limit_per_minute: int = Field(default=10, ge=1, le=600)
+    cooking_context_messages: int = Field(default=12, ge=2, le=40)
+    cooking_context_chars: int = Field(default=12_000, ge=1_000, le=100_000)
 
     # --- Nutrition data sources (all optional; each is only used when configured) ---
     usda_fdc_api_key: SecretStr | None = None
@@ -67,7 +73,6 @@ class Settings(BaseSettings):
     open_food_facts_base_url: str = "https://world.openfoodfacts.org"
     open_food_facts_user_agent: str = "FoodVerseAI/0.1 (self-hosted)"
     nutrition_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
-    # Signed scan/food references are accepted for this long after they were issued.
     signed_ref_ttl_minutes: int = Field(default=720, ge=5, le=10_080)
 
     # --- Per-user rate limits (in-process; protects model CPU and third-party API quotas) ---
@@ -75,8 +80,6 @@ class Settings(BaseSettings):
     nutrition_search_rate_limit_per_minute: int = Field(default=30, ge=1, le=600)
 
     # --- Media (see docs/adr/0002-media-storage.md) ---
-    # Uploaded files are stored here. The default is in the user's home directory, i.e.
-    # outside this repository and any web root. Point it at a dedicated data volume in production.
     media_root: Path = Path.home() / ".foodverse" / "media"
     max_upload_bytes: int = Field(default=8 * 1024 * 1024, ge=1024, le=64 * 1024 * 1024)
     max_image_pixels: int = Field(default=40_000_000, ge=10_000, le=200_000_000)
@@ -113,9 +116,15 @@ class Settings(BaseSettings):
             raise ValueError("OLLAMA_BASE_URL must start with http:// or https://")
         return value.rstrip("/")
 
-    @field_validator("vision_api_base_url", "usda_fdc_base_url", "open_food_facts_base_url")
+    @field_validator(
+        "vision_api_base_url",
+        "text_api_base_url",
+        "usda_fdc_base_url",
+        "open_food_facts_base_url",
+    )
     @classmethod
     def _validate_http_url(cls, value: str) -> str:
+        """Single validator for every optional URL field. Empty is allowed (means unset)."""
         if value and not value.startswith(("http://", "https://")):
             raise ValueError("URL settings must start with http:// or https://")
         return value.rstrip("/")
@@ -131,6 +140,20 @@ class Settings(BaseSettings):
             if not self.vision_api_base_url or not self.vision_api_model:
                 raise ValueError(
                     "VISION_API_BASE_URL and VISION_API_MODEL are required for openai_compatible"
+                )
+        return self
+
+    @model_validator(mode="after")
+    def _text_guards(self) -> "Settings":
+        if self.text_provider == "openai_compatible":
+            if not self.allow_external_ai_providers:
+                raise ValueError(
+                    "TEXT_PROVIDER=openai_compatible requires ALLOW_EXTERNAL_AI_PROVIDERS=true "
+                    "(prompts are sent to that server; this must be an explicit choice)"
+                )
+            if not self.text_api_base_url or not self.text_api_model:
+                raise ValueError(
+                    "TEXT_API_BASE_URL and TEXT_API_MODEL are required for openai_compatible"
                 )
         return self
 

@@ -487,3 +487,78 @@ export interface HygieneUpdateBody {
   checklist?: ChecklistItem[];
   findings?: HygieneFindingInput[];
 }
+
+// ---- Cooking assistant (Phase 6) ----
+export interface TextProviderInfo { name: string; model: string; external: boolean }
+
+export interface RecipeIngredient {
+  name: string; quantity: number | null; unit: string | null; note: string | null; optional: boolean;
+}
+export interface RecipeStep { number: number; instruction: string; duration_minutes: number | null }
+export interface RecipeSubstitution { ingredient: string; alternative: string; note: string | null }
+
+export interface RecipeNutrition {
+  whole_recipe: Calculation;
+  per_serving: Record<string, TotalNutrient>;
+  basis: string; servings: number; linked_items: number; note: string;
+}
+
+export interface Recipe {
+  id: string; title: string; description: string | null; servings: number;
+  prep_minutes: number | null; cook_minutes: number | null; total_minutes: number | null;
+  equipment: string[]; ingredients: RecipeIngredient[]; steps: RecipeStep[];
+  substitutions: RecipeSubstitution[]; dietary_tags: string[]; allergen_warnings: string[];
+  safety_notes: string[]; beginner_notes: string[]; tips: string[];
+  status: "suggested" | "saved"; favorite: boolean; revision: number;
+  provider: TextProviderInfo | null; nutrition: RecipeNutrition | null;
+  generated_at: string | null; created_at: string; updated_at: string;
+  context_note: string; allergy_note: string;
+}
+
+export interface RecipeSummary {
+  id: string; title: string; servings: number; total_minutes: number | null;
+  status: "suggested" | "saved"; favorite: boolean; dietary_tags: string[];
+  ingredient_count: number; updated_at: string;
+}
+
+export interface ChatMessage {
+  id: string; role: "user" | "assistant"; content: string;
+  recipe_id: string | null; warnings: string[]; created_at: string;
+}
+
+export interface ChatResponse {
+  conversation_id: string;
+  user_message: ChatMessage;
+  assistant_message: ChatMessage;
+  recipe: Recipe | null;
+  provider: TextProviderInfo;
+}
+
+export interface ConversationSummary {
+  id: string; title: string; message_count: number;
+  created_at: string; updated_at: string;
+}
+
+export interface ConversationDetail extends ConversationSummary {
+  messages: ChatMessage[]; recipes: RecipeSummary[];
+}
+
+export interface CookingCapabilities {
+  text: {
+    configured: boolean; provider: string | null; model: string | null;
+    external: boolean; message: string | null;
+  };
+  diets: { value: string; label: string }[];
+  max_servings: number; context_messages: number;
+  allergy_note: string; context_note: string;
+}
+
+export interface RecipeWriteBody {
+  title: string; description: string | null; servings: number;
+  prep_minutes: number | null; cook_minutes: number | null;
+  equipment: string[]; ingredients: RecipeIngredient[];
+  steps: { instruction: string; duration_minutes: number | null }[];
+  substitutions: RecipeSubstitution[];
+  dietary_tags: string[]; tips: string[]; beginner_notes: string[]; safety_notes: string[];
+  expected_revision?: number;
+}

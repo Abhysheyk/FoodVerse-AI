@@ -147,6 +147,16 @@ Set `OLLAMA_ENABLED=true` and model names in `backend/.env`. Phase 1 only *repor
 Ollama is reachable and the models are installed (Dashboard). It never downloads models; pull
 them yourself (`ollama pull <name>`). Expect slow CPU-only inference on 8 GB machines.
 
+## Cooking assistant (Phase 6)
+A local-first chat + structured-recipe generator over your own `OLLAMA_TEXT_MODEL`. Conversations
+are per-user and persisted; each assistant turn may include a validated recipe draft.
+
+Setup:
+```bash
+# backend/.env
+OLLAMA_ENABLED=true
+OLLAMA_TEXT_MODEL=<a text model you pulled>   # ollama pull <name>
+
 ## Disclaimer
 Allergy and diet settings are user-declared. This app is not medical advice and not a substitute
 for qualified professionals or official food-safety inspection.

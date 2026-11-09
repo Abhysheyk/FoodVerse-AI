@@ -17,6 +17,9 @@ from app.media.storage import LocalStorage, StorageBackend
 from app.models import User
 from app.nutrition.service import NutritionService, build_nutrition_service
 from app.repositories import users as user_repo
+from app.ai.factory import build_text_provider
+from app.ai.text import TextProvider
+
 
 CSRF_HEADER = "X-Requested-With"
 CSRF_VALUE = "FoodVerseWeb"
@@ -78,6 +81,13 @@ def get_vision_factory(settings: AppSettings) -> Callable[[], VisionProvider]:
     """Returns a callable so the provider is only built (and can only fail) after the request
     has been authenticated, rate limited and the photo's ownership verified."""
     return lambda: build_vision_provider(settings)
+
+def get_text_factory(settings: AppSettings) -> Callable[[], TextProvider]:
+    """Built lazily, after auth, rate limiting and ownership checks have run."""
+    return lambda: build_text_provider(settings)
+
+
+TextFactory = Annotated[Callable[[], TextProvider], Depends(get_text_factory)]
 
 
 Nutrition = Annotated[NutritionService, Depends(get_nutrition_service)]

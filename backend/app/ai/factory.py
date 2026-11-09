@@ -6,6 +6,9 @@ from app.ai.ollama_vision import OllamaVisionProvider
 from app.ai.openai_vision import OpenAICompatibleVisionProvider
 from app.ai.vision import VisionProvider, VisionUnavailableError
 from app.core.config import Settings
+from app.ai.ollama_text import OllamaTextProvider
+from app.ai.openai_text import OpenAICompatibleTextProvider
+from app.ai.text import TextProvider, TextUnavailableError
 
 
 def build_vision_provider(
@@ -33,6 +36,35 @@ def build_vision_provider(
     return OllamaVisionProvider(
         settings.ollama_base_url,
         settings.ollama_vision_model,
+        settings.ollama_timeout_seconds,
+        transport,
+    )
+
+def build_text_provider(
+    settings: Settings, transport: httpx.BaseTransport | None = None
+) -> TextProvider:
+    """The one place a text provider is chosen. There is never an automatic fallback."""
+    if settings.text_provider == "openai_compatible":
+        key = settings.text_api_key.get_secret_value() if settings.text_api_key else None
+        return OpenAICompatibleTextProvider(
+            settings.text_api_base_url,
+            settings.text_api_model,
+            key,
+            settings.text_timeout_seconds,
+            transport,
+        )
+    if not settings.ollama_enabled:
+        raise TextUnavailableError(
+            "The cooking assistant is not enabled on this server. (Setup: OLLAMA_ENABLED=true "
+            "and OLLAMA_TEXT_MODEL.)"
+        )
+    if not settings.ollama_text_model:
+        raise TextUnavailableError(
+            "No text model is configured on this server (OLLAMA_TEXT_MODEL)."
+        )
+    return OllamaTextProvider(
+        settings.ollama_base_url,
+        settings.ollama_text_model,
         settings.ollama_timeout_seconds,
         transport,
     )
