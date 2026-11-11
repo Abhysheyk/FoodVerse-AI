@@ -3,6 +3,10 @@ import type {
   AIStatus,
   AuthResponse,
   Calculation,
+  ChatResponse,
+  ConversationDetail,
+  ConversationSummary,
+  CookingCapabilities,
   DashboardSummary,
   FoodCapabilities,
   FreshnessCapabilities,
@@ -11,21 +15,10 @@ import type {
   FreshnessRequest,
   FreshnessSummary,
   FoodItemPayload,
+  GroceryListDetail,
+  GroceryListSummary,
+  GroceryListUpdateBody,
   HistoryItem,
-  MealCategory,
-  MealDetail,
-  MealSummary,
-  MealWriteBody,
-  MediaItem,
-  ModuleInfo,
-  ModuleKey,
-  Page,
-  PreferenceOptions,
-  NutritionSearchResponse,
-  Preferences,
-  PreferencesInput,
-  ScanResponse,
-  User,
   HygieneCapabilities,
   HygieneCreateBody,
   HygieneDetail,
@@ -33,14 +26,29 @@ import type {
   HygieneStatus,
   HygieneSummary,
   HygieneUpdateBody,
-  ChatResponse,
-  CookingCapabilities,
-  ConversationDetail,
+  MealCategory,
+  MealDetail,
+  MealSummary,
+  MealWriteBody,
+  MediaItem,
+  ModuleInfo,
+  ModuleKey,
+  NutritionSearchResponse,
+  NutritionTarget,
+  Page,
+  PlanBody,
+  PlanCapabilities,
+  PlanDetail,
+  PlanSummary,
+  PreferenceOptions,
+  Preferences,
+  PreferencesInput,
   Recipe,
   RecipeSummary,
   RecipeWriteBody,
-  ConversationSummary
-
+  ScanResponse,
+  Tracking,
+  User,
 } from "./types";
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
@@ -235,3 +243,62 @@ export const deleteRecipe = (id: string) =>
 export const attachRecipeNutrition = (
   id: string, links: { ingredient_index: number; food_ref: string; grams: number }[],
 ) => request<Recipe>(`/cooking/recipes/${id}/nutrition`, { method: "POST", body: { links } });
+
+// ---- Phase 7 ----
+export const getPlanCapabilities = () => request<PlanCapabilities>("/meal-plans/capabilities");
+
+export function listMealPlans(page = 1, pageSize = 10) {
+  return request<Page<PlanSummary>>(`/meal-plans?page=${page}&page_size=${pageSize}`);
+}
+export const getMealPlan = (id: string) => request<PlanDetail>(`/meal-plans/${id}`);
+export const createBlankPlan = (weekStartDate: string, title?: string) =>
+  request<PlanDetail>("/meal-plans/blank", {
+    method: "POST",
+    body: { week_start_date: weekStartDate, title: title ?? null },
+  });
+export const generateMealPlan = (
+  weekStartDate: string, includeSnacks = true, title?: string, signal?: AbortSignal,
+) =>
+  request<PlanDetail>("/meal-plans/generate", {
+    method: "POST",
+    body: { week_start_date: weekStartDate, include_snacks: includeSnacks, title: title ?? null },
+    signal,
+  });
+export const updateMealPlan = (id: string, body: PlanBody) =>
+  request<PlanDetail>(`/meal-plans/${id}`, { method: "PUT", body });
+export const copyMealPlan = (id: string, weekStartDate: string, title?: string) =>
+  request<PlanDetail>(`/meal-plans/${id}/copy`, {
+    method: "POST",
+    body: { week_start_date: weekStartDate, title: title ?? null },
+  });
+export const deleteMealPlan = (id: string) =>
+  request<void>(`/meal-plans/${id}`, { method: "DELETE" });
+export const estimateMealPlan = (id: string) =>
+  request<PlanDetail>(`/meal-plans/${id}/estimate`, { method: "POST" });
+
+export function listGroceryLists(page = 1, pageSize = 10) {
+  return request<Page<GroceryListSummary>>(`/grocery-lists?page=${page}&page_size=${pageSize}`);
+}
+export const getGroceryList = (id: string) =>
+  request<GroceryListDetail>(`/grocery-lists/${id}`);
+export const createGroceryList = (planId: string, title?: string) =>
+  request<GroceryListDetail>("/grocery-lists", {
+    method: "POST",
+    body: { plan_id: planId, title: title ?? null },
+  });
+export const updateGroceryList = (id: string, body: GroceryListUpdateBody) =>
+  request<GroceryListDetail>(`/grocery-lists/${id}`, { method: "PUT", body });
+export const deleteGroceryList = (id: string) =>
+  request<void>(`/grocery-lists/${id}`, { method: "DELETE" });
+
+export const getNutritionTarget = () =>
+  request<NutritionTarget>("/users/me/nutrition-target");
+export const setNutritionTarget = (body: NutritionTarget) =>
+  request<NutritionTarget>("/users/me/nutrition-target", { method: "PUT", body });
+export const clearNutritionTarget = () =>
+  request<void>("/users/me/nutrition-target", { method: "DELETE" });
+export function getTracking(dateFrom: string, dateTo: string) {
+  return request<Tracking>(
+    `/users/me/nutrition-target/tracking?date_from=${dateFrom}&date_to=${dateTo}`,
+  );
+}

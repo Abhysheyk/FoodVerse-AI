@@ -21,7 +21,10 @@ from app.api.v1 import (
     meals,
     media,
     nutrition,
-    system
+    system,
+    grocery,
+    meal_plans,
+    nutrition_targets,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -37,3 +40,6 @@ api_router.include_router(nutrition.router)
 api_router.include_router(meals.router)
 api_router.include_router(hygiene.router)
 api_router.include_router(cooking.router)
+api_router.include_router(meal_plans.router)
+api_router.include_router(grocery.router)
+api_router.include_router(nutrition_targets.router)

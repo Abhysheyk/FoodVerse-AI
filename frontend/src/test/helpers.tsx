@@ -40,7 +40,15 @@ export function mockApi(routes: Record<string, Handler>) {
     const raw = init?.body;
     const body = raw instanceof FormData ? raw : raw ? JSON.parse(raw as string) : undefined;
     calls.push({ key, body, headers });
-    const handler = routes[key];
+    let handler = routes[key];
+    if (!handler) {
+      for (const [pattern, candidate] of Object.entries(routes)) {
+        if (pattern.endsWith("*") && key.startsWith(pattern.slice(0, -1))) {
+          handler = candidate;
+          break;
+        }
+      }
+    }
     if (!handler) {
       unmocked.push(key);
       throw new Error(`Unmocked request: ${key}`);

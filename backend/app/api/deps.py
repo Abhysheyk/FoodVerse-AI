@@ -83,7 +83,8 @@ def get_vision_factory(settings: AppSettings) -> Callable[[], VisionProvider]:
     return lambda: build_vision_provider(settings)
 
 def get_text_factory(settings: AppSettings) -> Callable[[], TextProvider]:
-    """Built lazily, after auth, rate limiting and ownership checks have run."""
+    """Same pattern as get_vision_factory: defer provider construction until a request
+    has been authenticated, rate-limited and checked."""
     return lambda: build_text_provider(settings)
 
 

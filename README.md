@@ -96,6 +96,14 @@ are hash-pinned locks (regenerate with `make lock`, needs `uv`). Frontend is loc
 | GET | /freshness/assessments?page=&label=&category= , /freshness/assessments/{id} | bearer (owner only) |
 | DELETE | /freshness/assessments/{id} | bearer + header (owner only) |
 | GET | /health, /ready | none |
+| GET | /meal-plans/capabilities | bearer |
+| POST | /meal-plans/generate, /meal-plans/blank | bearer + header (rate limited) |
+| GET, PUT, DELETE | /meal-plans, /meal-plans/{id} | bearer (+ header for writes; owner only) |
+| POST | /meal-plans/{id}/copy, /meal-plans/{id}/estimate | bearer + header (owner only) |
+| POST, GET | /grocery-lists, /grocery-lists?page=&page_size= | bearer (+ header for POST) |
+| GET, PUT, DELETE | /grocery-lists/{id} | bearer (+ header for writes; owner only) |
+| GET, PUT, DELETE | /users/me/nutrition-target | bearer (+ header for writes) |
+| GET | /users/me/nutrition-target/tracking?date_from=&date_to= | bearer |
 
 Errors always look like `{"error": {"code", "message", "details", "request_id"}}`.
 
@@ -157,6 +165,25 @@ Setup:
 OLLAMA_ENABLED=true
 OLLAMA_TEXT_MODEL=<a text model you pulled>   # ollama pull <name>
 
-## Disclaimer
+
+
+## Meal planning and nutrition tracking (Phase 7)
+- **Onboarding**: Settings now collects dietary pattern, excluded ingredients, preferred cuisines,
+  budget, maximum cooking time, default servings and pantry ingredients.
+- **AI generation**: Set `TEXT_PROVIDER=openai_compatible` with a free-tier key from any
+  OpenAI-compatible provider (Groq, OpenRouter, Together, Gemini) and
+  `ALLOW_EXTERNAL_AI_PROVIDERS=true`. Prompt is sent externally, clearly disclosed in the UI.
+- **Enforced constraints**: allergies, excluded ingredients and dietary pattern are re-checked in
+  application code (`app.domain.meal_plan.find_violations`). A violation rejects the plan; nothing
+  is saved.
+- **Manual planning**: works without AI. Create a blank plan, add meals and ingredients, save.
+- **Nutrition estimates**: use existing trusted sources; only mass units are converted; unmatched
+  ingredients are shown as missing, not estimated.
+- **Grocery lists**: derived from a plan; merging is conservative (same name + compatible unit
+  family only). Item quantity, checked state and removal persist server-side.
+- **Tracking**: consumed meals (from your meal log) against an optional, user-set target. Charts
+  appear once ≥3 days in the range have data. Planned meals are never treated as consumed.
+
+  ## Disclaimer
 Allergy and diet settings are user-declared. This app is not medical advice and not a substitute
 for qualified professionals or official food-safety inspection.

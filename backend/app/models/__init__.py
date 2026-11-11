@@ -8,6 +8,13 @@ from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.models.hygiene import HygieneInspection
 from app.models.cooking import CookingConversation, CookingMessage, MessageRole, Recipe, RecipeStatus
+from app.models.meal_plan import (
+    GroceryItem,
+    GroceryList,
+    MealPlan,
+    MealPlanSource,
+    MealPlanStatus,
+)
 
 __all__ = [
     "AnalysisRecord",
@@ -29,4 +36,9 @@ __all__ = [
     "MessageRole",
     "Recipe",
     "RecipeStatus",
+    "GroceryItem",
+    "GroceryList",
+    "MealPlan",
+    "MealPlanSource",
+    "MealPlanStatus",
 ]

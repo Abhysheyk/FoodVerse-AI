@@ -20,6 +20,14 @@ def update_preferences(db: Session, user: User, data: PreferencesUpdate) -> User
     prefs.unit_system = data.unit_system
     prefs.dietary_preferences = list(data.dietary_preferences)
     prefs.allergies = list(data.allergies)
+    prefs.dietary_pattern = data.dietary_pattern
+    prefs.excluded_ingredients = list(data.excluded_ingredients)
+    prefs.preferred_cuisines = list(data.preferred_cuisines)
+    prefs.budget = data.budget
+    prefs.max_cooking_minutes = data.max_cooking_minutes
+    prefs.default_servings = data.default_servings
+    prefs.pantry_ingredients = list(data.pantry_ingredients)
     db.commit()
     db.refresh(prefs)
     return prefs
+

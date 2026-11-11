@@ -1,10 +1,10 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, func
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, func
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -47,5 +47,25 @@ class UserPreferences(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+    # Phase 7 additions. All have safe defaults so existing rows are valid.
+    dietary_pattern: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    excluded_ingredients: Mapped[list[str]] = mapped_column(
+        ARRAY(String(50)), default=list, server_default="{}"
+    )
+    preferred_cuisines: Mapped[list[str]] = mapped_column(
+        ARRAY(String(32)), default=list, server_default="{}"
+    )
+    budget: Mapped[str] = mapped_column(
+        String(16), default="any", server_default="any", nullable=False
+    )
+    max_cooking_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    default_servings: Mapped[int] = mapped_column(
+        Integer, default=1, server_default="1", nullable=False
+    )
+    pantry_ingredients: Mapped[list[str]] = mapped_column(
+        ARRAY(String(80)), default=list, server_default="{}"
+    )
+    nutrition_targets: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="preferences")

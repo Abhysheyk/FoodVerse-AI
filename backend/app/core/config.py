@@ -66,6 +66,12 @@ class Settings(BaseSettings):
     cooking_context_messages: int = Field(default=12, ge=2, le=40)
     cooking_context_chars: int = Field(default=12_000, ge=1_000, le=100_000)
 
+    text_provider: Literal["none", "openai_compatible"] = "none"
+    text_api_base_url: str = ""
+    text_api_key: SecretStr | None = None
+    text_api_model: str = ""
+    text_timeout_seconds: float = Field(default=90.0, gt=0, le=600)
+
     # --- Nutrition data sources (all optional; each is only used when configured) ---
     usda_fdc_api_key: SecretStr | None = None
     usda_fdc_base_url: str = "https://api.nal.usda.gov/fdc/v1"
@@ -84,6 +90,10 @@ class Settings(BaseSettings):
     max_upload_bytes: int = Field(default=8 * 1024 * 1024, ge=1024, le=64 * 1024 * 1024)
     max_image_pixels: int = Field(default=40_000_000, ge=10_000, le=200_000_000)
     user_media_quota_bytes: int = Field(default=500 * 1024 * 1024, ge=1024)
+
+    # --- Meal plan / grocery planning rate limits (per user, in-process) ---
+    meal_plan_generate_rate_limit_per_hour: int = Field(default=6, ge=1, le=60)
+    meal_plan_estimate_rate_limit_per_hour: int = Field(default=12, ge=1, le=120)
 
     @field_validator("media_root")
     @classmethod
@@ -144,20 +154,6 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
-    def _text_guards(self) -> "Settings":
-        if self.text_provider == "openai_compatible":
-            if not self.allow_external_ai_providers:
-                raise ValueError(
-                    "TEXT_PROVIDER=openai_compatible requires ALLOW_EXTERNAL_AI_PROVIDERS=true "
-                    "(prompts are sent to that server; this must be an explicit choice)"
-                )
-            if not self.text_api_base_url or not self.text_api_model:
-                raise ValueError(
-                    "TEXT_API_BASE_URL and TEXT_API_MODEL are required for openai_compatible"
-                )
-        return self
-
-    @model_validator(mode="after")
     def _production_guards(self) -> "Settings":
         if self.cookie_samesite == "none" and not self.cookie_secure:
             raise ValueError("COOKIE_SAMESITE=none requires COOKIE_SECURE=true")
@@ -168,6 +164,21 @@ class Settings(BaseSettings):
                 raise ValueError("COOKIE_SECURE must be true in production")
             if not self.cors_origins:
                 raise ValueError("CORS_ALLOWED_ORIGINS must be set in production")
+        return self
+
+    @model_validator(mode="after")
+    def _text_guards(self) -> "Settings":
+        if self.text_provider == "openai_compatible":
+            if not self.allow_external_ai_providers:
+                raise ValueError(
+                    "TEXT_PROVIDER=openai_compatible requires ALLOW_EXTERNAL_AI_PROVIDERS=true "
+                    "(the meal-planning prompt leaves this machine; this must be explicit)"
+                )
+            if not self.text_api_base_url or not self.text_api_model:
+                raise ValueError(
+                    "TEXT_API_BASE_URL and TEXT_API_MODEL are required for text_provider="
+                    "openai_compatible"
+                )
         return self
 
     @property

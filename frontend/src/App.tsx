@@ -20,6 +20,11 @@ import { HygieneDetailPage } from "./pages/HygieneDetailPage";
 import { CookingPage } from "./pages/CookingPage";
 import { RecipesPage } from "./pages/RecipesPage";
 import { RecipeDetailPage } from "./pages/RecipeDetailPage";
+import { PlannerPage } from "./pages/PlannerPage";
+import { PlanDetailPage } from "./pages/PlanDetailPage";
+import { GroceryListsPage } from "./pages/GroceryListsPage";
+import { GroceryDetailPage } from "./pages/GroceryDetailPage";
+import { NutritionDashboardPage } from "./pages/NutritionDashboardPage";
 
 
 export function App() {
@@ -51,6 +56,11 @@ export function App() {
           <Route path="/hygiene" element={<HygienePage />} />
           <Route path="/hygiene/history" element={<HygieneHistoryPage />} />
           <Route path="/hygiene/:id" element={<HygieneDetailPage />} />
+          <Route path="/planner" element={<PlannerPage />} />
+          <Route path="/planner/:id" element={<PlanDetailPage />} />
+          <Route path="/grocery" element={<GroceryListsPage />} />
+          <Route path="/grocery/:id" element={<GroceryDetailPage />} />
+          <Route path="/nutrition" element={<NutritionDashboardPage />} />
         </Route>
       </Route>
       <Route path="*" element={<p className="center-note">Page not found.</p>} />

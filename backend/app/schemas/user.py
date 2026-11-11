@@ -18,6 +18,14 @@ DietaryPreference = Literal[
     "gluten_free",
     "lactose_free",
 ]
+
+DietaryPattern = Literal[
+    "omnivore", "vegetarian", "vegan", "eggetarian", "pescatarian",
+    "jain", "halal", "kosher",
+]
+BudgetLevel = Literal["any", "budget", "moderate", "premium"]
+
+
 DIETARY_PREFERENCES: tuple[str, ...] = get_args(DietaryPreference)
 
 MAX_ALLERGIES = 20
@@ -40,6 +48,13 @@ class PreferencesRead(BaseModel):
     unit_system: UnitSystem
     dietary_preferences: list[str]
     allergies: list[str]
+    dietary_pattern: str | None = None
+    excluded_ingredients: list[str] = []
+    preferred_cuisines: list[str] = []
+    budget: str = "any"
+    max_cooking_minutes: int | None = None
+    default_servings: int = 1
+    pantry_ingredients: list[str] = []
     updated_at: datetime
 
 
@@ -51,6 +66,13 @@ class PreferencesUpdate(BaseModel):
     unit_system: UnitSystem
     dietary_preferences: list[DietaryPreference] = Field(default_factory=list, max_length=20)
     allergies: list[str] = Field(default_factory=list, max_length=MAX_ALLERGIES)
+    dietary_pattern: DietaryPattern | None = None
+    excluded_ingredients: list[str] = Field(default_factory=list, max_length=50)
+    preferred_cuisines: list[str] = Field(default_factory=list, max_length=20)
+    budget: BudgetLevel = "any"
+    max_cooking_minutes: int | None = Field(default=None, ge=5, le=720)
+    default_servings: int = Field(default=1, ge=1, le=20)
+    pantry_ingredients: list[str] = Field(default_factory=list, max_length=100)
 
     @field_validator("dietary_preferences")
     @classmethod
@@ -68,6 +90,18 @@ class PreferencesUpdate(BaseModel):
             if not _ALLERGY_RE.match(item):
                 raise ValueError("Allergies may contain only letters, digits, spaces, - ' and /.")
             cleaned.append(item)
+        return list(dict.fromkeys(cleaned))
+
+    @field_validator("excluded_ingredients", "pantry_ingredients")
+    @classmethod
+    def _normalise_list(cls, values: list[str]) -> list[str]:
+        cleaned = [" ".join(v.split()).lower()[:80] for v in values if v.strip()]
+        return list(dict.fromkeys(cleaned))
+
+    @field_validator("preferred_cuisines")
+    @classmethod
+    def _cuisines(cls, values: list[str]) -> list[str]:
+        cleaned = [" ".join(v.split())[:32] for v in values if v.strip()]
         return list(dict.fromkeys(cleaned))
 
 

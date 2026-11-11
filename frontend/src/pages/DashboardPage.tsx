@@ -89,7 +89,9 @@ export function DashboardPage() {
       </Card>
 
       <p className="small-text">
-        Also: <Link to="/history">All history</Link> · <Link to="/modules">All modules</Link> · <Link to="/media">Media library</Link>
+        Also: <Link to="/history">All history</Link> · <Link to="/modules">All modules</Link> ·{" "}
+        <Link to="/media">Media library</Link> · <Link to="/planner">Meal planner</Link> ·{" "}
+        <Link to="/nutrition">Nutrition tracking</Link>
       </p>
 
       <Card title="Local AI status" headingId="ai-heading">

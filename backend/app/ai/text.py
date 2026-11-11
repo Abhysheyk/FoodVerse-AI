@@ -1,9 +1,9 @@
-"""Text-generation provider interface.
-
-Mirrors the vision layer: one configured provider, no silent fallback, typed errors with
-user-safe messages, and a single `complete()` call that every feature shares.
+"""Text generation provider interface used by cooking (multi-turn) and meal planning
+(single-shot JSON). Mirrors the VisionProvider contract: exactly one provider is configured,
+never falls back, and the caller owns validation of what the model said.
 """
 
+from dataclasses import dataclass
 from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel
@@ -12,17 +12,12 @@ from app.core.errors import AppError
 
 
 class TextError(AppError):
-    """Base for every failure of a text-generation call."""
+    """Base for every failure of a text-generation call. Never carries partial output."""
 
 
 class TextUnavailableError(TextError):
     status_code = 503
     code = "text_unavailable"
-
-
-class TextModelMissingError(TextError):
-    status_code = 503
-    code = "text_model_missing"
 
 
 class TextTimeoutError(TextError):
@@ -43,10 +38,13 @@ class TextRateLimitedError(TextError):
 class TextProviderInfo(BaseModel):
     name: str
     model: str
-    external: bool  # True when the prompt leaves this machine/network
+    external: bool  # True when prompts leave this machine/network
 
 
-class ChatTurn(BaseModel):
+@dataclass(frozen=True)
+class ChatTurn:
+    """One turn in a multi-turn chat (used by the cooking assistant)."""
+
     role: Literal["system", "user", "assistant"]
     content: str
 
@@ -54,6 +52,10 @@ class ChatTurn(BaseModel):
 class TextProvider(Protocol):
     info: TextProviderInfo
 
-    def complete(self, messages: list[ChatTurn], schema: dict[str, Any] | None = None) -> str:
-        """Return the model's raw text. The caller owns validation; nothing is repaired here."""
+    def complete_json(self, prompt: str, schema: dict[str, Any]) -> str:
+        """Single-shot: send a prompt, return the model's raw text (a JSON document)."""
+        ...
+
+    def chat(self, turns: list[ChatTurn]) -> str:
+        """Multi-turn: send a conversation history, return the next assistant reply as text."""
         ...

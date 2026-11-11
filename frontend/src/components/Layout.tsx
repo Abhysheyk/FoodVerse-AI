@@ -15,6 +15,9 @@ const NAV = [
   { to: "/settings", label: "Settings", icon: <SettingsIcon />, end: false, extra: false },
   { to: "/hygiene", label: "Hygiene", icon: <LeafIcon />, end: false, extra: true },
   { to: "/cooking", label: "Cook", icon: <PlateIcon />, end: false, extra: true },
+  { to: "/planner", label: "Planner", icon: <GridIcon />, end: false, extra: true },
+  { to: "/grocery", label: "Groceries", icon: <PlateIcon />, end: false, extra: true },
+  { to: "/nutrition", label: "Tracking", icon: <ClockIcon />, end: false, extra: true },
 ];
 
 export function Layout() {

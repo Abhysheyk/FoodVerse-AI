@@ -30,7 +30,7 @@ describe("preferences page", () => {
 
     expect(await screen.findByText("Preferences saved.")).toBeInTheDocument();
     const put = calls.find((c) => c.key === "PUT /users/me/preferences");
-    expect(put?.body).toEqual({
+    expect(put?.body).toMatchObject({
       unit_system: "imperial",
       dietary_preferences: ["vegan"],
       allergies: ["tree nut", "peanut"],

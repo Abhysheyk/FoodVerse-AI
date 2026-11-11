@@ -1,13 +1,16 @@
-"""Text generation via an OpenAI-compatible /chat/completions server.
+"""Text generation via any OpenAI-compatible /chat/completions server.
 
-Opt-in only. The API key is placed in the Authorization header and is never logged or returned.
+Groq, OpenRouter, Together and Gemini's OpenAI endpoint all expose this shape. Free tiers
+are enough for this app. The API key is only ever placed in the Authorization header and is
+never logged or included in an error message.
 """
 
+import json
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 
-from app.ai.openai_vision import is_local_url
 from app.ai.text import (
     ChatTurn,
     TextBadOutputError,
@@ -16,6 +19,13 @@ from app.ai.text import (
     TextTimeoutError,
     TextUnavailableError,
 )
+
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "[::1]"}
+
+
+def _is_local(url: str) -> bool:
+    host = (urlparse(url).hostname or "").lower()
+    return host in _LOCAL_HOSTS or host.startswith("127.")
 
 
 class OpenAICompatibleTextProvider:
@@ -33,17 +43,10 @@ class OpenAICompatibleTextProvider:
         self._timeout = httpx.Timeout(timeout_seconds, connect=5.0)
         self._transport = transport
         self.info = TextProviderInfo(
-            name="openai_compatible", model=model, external=not is_local_url(base_url)
+            name="openai_compatible", model=model, external=not _is_local(base_url)
         )
 
-    def complete(self, messages: list[ChatTurn], schema: dict[str, Any] | None = None) -> str:
-        payload: dict[str, Any] = {
-            "model": self._model,
-            "temperature": 0,
-            "messages": [m.model_dump() for m in messages],
-        }
-        if schema is not None:
-            payload["response_format"] = {"type": "json_object"}
+    def _post(self, payload: dict[str, Any]) -> str:
         headers = {"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}
         try:
             with httpx.Client(timeout=self._timeout, transport=self._transport) as client:
@@ -59,7 +62,7 @@ class OpenAICompatibleTextProvider:
 
         if response.status_code == 429:
             raise TextRateLimitedError(
-                "The text provider is rate limiting requests. Please try again shortly."
+                "The text provider is rate limiting requests. Try again shortly."
             )
         if response.status_code in (401, 403):
             raise TextUnavailableError("The text provider rejected the configured credentials.")
@@ -77,4 +80,37 @@ class OpenAICompatibleTextProvider:
             raise TextBadOutputError(
                 "The text provider returned a response in an unexpected format."
             )
+        return content.strip()
+
+    def complete_json(self, prompt: str, schema: dict[str, Any]) -> str:
+        payload = {
+            "model": self._model,
+            "temperature": 0.2,
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {"role": "system", "content": "Reply with a single JSON object and nothing else."},
+                {"role": "user", "content": prompt},
+            ],
+        }
+        content = self._post(payload)
+        # Some providers wrap JSON in ```json fences even with response_format=json_object.
+        if content.startswith("```"):
+            lines = content.split("\n")
+            if lines[0].lower().startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            content = "\n".join(lines).strip()
+        try:
+            json.loads(content)
+        except json.JSONDecodeError:
+            raise TextBadOutputError("The text provider did not return valid JSON.") from None
         return content
+
+    def chat(self, turns: list[ChatTurn]) -> str:
+        payload = {
+            "model": self._model,
+            "temperature": 0.6,
+            "messages": [{"role": t.role, "content": t.content} for t in turns],
+        }
+        return self._post(payload)

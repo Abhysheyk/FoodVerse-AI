@@ -14,10 +14,22 @@ export interface AuthResponse {
 
 export type UnitSystem = "metric" | "imperial";
 
+export type DietaryPattern =
+  | "omnivore" | "vegetarian" | "vegan" | "eggetarian"
+  | "pescatarian" | "jain" | "halal" | "kosher";
+export type BudgetLevel = "any" | "budget" | "moderate" | "premium";
+
 export interface Preferences {
   unit_system: UnitSystem;
   dietary_preferences: string[];
   allergies: string[];
+  dietary_pattern: string | null;
+  excluded_ingredients: string[];
+  preferred_cuisines: string[];
+  budget: string;
+  max_cooking_minutes: number | null;
+  default_servings: number;
+  pantry_ingredients: string[];
   updated_at: string;
 }
 
@@ -27,9 +39,13 @@ export interface PreferencesInput {
   allergies: string[];
 }
 
+export interface PreferencesInput extends Omit<Preferences, "updated_at"> {}
+
 export interface PreferenceOptions {
   unit_systems: UnitSystem[];
   dietary_preferences: string[];
+  dietary_patterns: string[];
+  budget_levels: string[];
   common_allergens: string[];
 }
 
@@ -561,4 +577,149 @@ export interface RecipeWriteBody {
   substitutions: RecipeSubstitution[];
   dietary_tags: string[]; tips: string[]; beginner_notes: string[]; safety_notes: string[];
   expected_revision?: number;
+}
+
+export type MealPlanSource = "ai" | "manual" | "copied";
+export type MealPlanStatus = "draft" | "active" | "archived";
+export type PlanMealCategory = "breakfast" | "lunch" | "dinner" | "snack";
+
+export interface PlanIngredient { name: string; quantity: number; unit: string; }
+export interface PlanMeal {
+  meal: PlanMealCategory;
+  title: string;
+  servings: number;
+  cooking_minutes: number | null;
+  ingredients: PlanIngredient[];
+  notes: string | null;
+}
+export interface PlanDay { day_date: string; meals: PlanMeal[]; }
+export interface PlanOut { schema_version: number; days: PlanDay[]; notes: string | null; }
+
+export interface PlanSummary {
+  id: string;
+  title: string;
+  week_start_date: string;
+  source: MealPlanSource;
+  status: MealPlanStatus;
+  revision: number;
+  day_count: number;
+  meal_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlanDetail extends PlanSummary {
+  notes: string | null;
+  plan: PlanOut;
+  model_meta: Record<string, unknown> | null;
+  estimate: PlanEstimate | null;
+  estimated_at: string | null;
+}
+
+export interface PlanEstimateMeal {
+  meal: string;
+  title: string;
+  kcal_low: number;
+  kcal_high: number;
+  complete: boolean;
+  missing_ingredients: string[];
+  ingredient_estimates: PlanEstimateIngredient[];
+}
+export interface PlanEstimateDay {
+  day_date: string;
+  kcal_low: number;
+  kcal_high: number;
+  complete: boolean;
+  missing_ingredients: string[];
+  meals: PlanEstimateMeal[];
+}
+export interface PlanEstimate {
+  method: string; unit_basis: string; generated_at: string;
+  days: PlanEstimateDay[]; warnings: string[]; notes: string;
+}
+
+export interface PlanEstimateIngredient {
+  name: string;
+  quantity: number;
+  unit: string;
+  grams: number;
+  matched_source: string;
+  matched_name: string;
+  kcal: number;
+}
+
+export interface PlanCapabilities {
+  text_provider_configured: boolean;
+  text_provider: string | null;
+  text_provider_external: boolean;
+  text_model: string | null;
+  message: string | null;
+  nutrition_sources_configured: boolean;
+}
+
+export interface ConstraintViolation {
+  day_date: string; meal: string; entry_title: string;
+  ingredient: string; code: string; reason: string;
+}
+
+export interface PlanBody {
+  title: string;
+  week_start_date: string;
+  notes: string | null;
+  days: PlanDay[];
+  expected_revision?: number;
+}
+
+// grocery
+export interface GroceryItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  checked: boolean;
+  position: number;
+  notes: string | null;
+}
+export interface GroceryItemIn {
+  name: string; quantity: number; unit: string;
+  checked: boolean; notes: string | null;
+}
+export interface GroceryListSummary {
+  id: string; title: string; plan_id: string | null;
+  revision: number; item_count: number; checked_count: number;
+  created_at: string; updated_at: string;
+}
+export interface GroceryListDetail extends GroceryListSummary { items: GroceryItem[]; }
+export interface GroceryListUpdateBody {
+  title: string;
+  items: GroceryItemIn[];
+  expected_revision?: number;
+}
+
+// tracking
+export interface TrackingDay {
+  date: string;
+  meals_logged: number;
+  kcal_low: number;
+  kcal_high: number;
+  complete: boolean;
+}
+export interface Tracking {
+  range: { from: string; to: string };
+  target: NutritionTarget | null;
+  target_kcal: number | null;
+  days: TrackingDay[];
+  days_with_data: number;
+  chart_available: boolean;
+  note: string;
+}
+
+export interface NutritionTarget {
+  calories_min: number | null;
+  calories_max: number | null;
+  protein_g_min: number | null;
+  carbs_g_min: number | null;
+  fat_g_min: number | null;
+  fiber_g_min: number | null;
+  notes: string | null;
 }
